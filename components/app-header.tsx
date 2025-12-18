@@ -14,14 +14,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { api } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
 export function AppHeader() {
   const router = useRouter()
+  const { toast } = useToast()
 
-  const handleLogout = () => {
-    // Remove auth token
-    document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"
-    router.push("/login")
+  async function handleLogout() {
+    try {
+      await api("/users/logout", { method: "POST" })
+    } catch (error) {
+      toast({
+        title: "Erro ao sair",
+        description: error instanceof Error ? error.message : "Tente novamente",
+        variant: "destructive",
+      })
+    } finally {
+      router.push("/login")
+      router.refresh()
+    }
   }
 
   return (

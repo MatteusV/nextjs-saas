@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react"
+import { api } from "@/lib/api"
 
 export function LoginForm() {
   const router = useRouter()
@@ -24,31 +25,23 @@ export function LoginForm() {
     password: "",
   })
 
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
+  function handleInputChange(field: keyof typeof formData, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (error) setError("")
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL
-      if (!apiUrl) {
-        throw new Error("API URL não configurada")
-      }
-
-      const response = await fetch(`${apiUrl}/users/login`, {
+      const response = await api("/users/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(formData),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
         setError(data.error || "Email ou senha incorretos")
@@ -60,21 +53,16 @@ export function LoginForm() {
         return
       }
 
-      // Save auth token to cookie
-      if (data.token) {
-        document.cookie = `auth_token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}` // 7 days
-      }
-
+      // Session cookie is set by the backend (credentials: include).
       toast({
         title: "Login realizado!",
         description: "Redirecionando...",
       })
 
-      // Redirect to app or original destination
       const redirect = searchParams.get("redirect") || "/app"
       setTimeout(() => {
         router.push(redirect)
-      }, 1000)
+      }, 500)
     } catch (error) {
       toast({
         title: "Erro ao fazer login",

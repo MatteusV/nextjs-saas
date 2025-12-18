@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Upload, Wand2, Download, Loader2, ImageIcon, XCircle } from "lucide-react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
+import { api } from "@/lib/api"
 
 const STYLE_OPTIONS = [
   { id: "artistic", name: "Artístico", description: "Estilo de pintura artística" },
@@ -37,11 +38,10 @@ export function ImageStylizer() {
   const [processedImage, setProcessedImage] = useState<ProcessedImage | null>(null)
   const [history, setHistory] = useState<ProcessedImage[]>([])
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Arquivo inválido",
@@ -51,7 +51,6 @@ export function ImageStylizer() {
       return
     }
 
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "Arquivo muito grande",
@@ -66,18 +65,18 @@ export function ImageStylizer() {
     setProcessedImage(null)
   }
 
-  const handleClearImage = () => {
+  function handleClearImage() {
     setSelectedFile(null)
     setPreviewUrl(null)
     setProcessedImage(null)
     setSelectedStyle("")
   }
 
-  const handleStyleSelect = (styleId: string) => {
+  function handleStyleSelect(styleId: string) {
     setSelectedStyle(styleId)
   }
 
-  const handleProcess = async () => {
+  async function handleProcess() {
     if (!selectedFile || !selectedStyle) {
       toast({
         title: "Dados incompletos",
@@ -90,32 +89,19 @@ export function ImageStylizer() {
     setIsProcessing(true)
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL
-      if (!apiUrl) {
-        throw new Error("API URL não configurada")
-      }
-
       const formData = new FormData()
       formData.append("image", selectedFile)
       formData.append("style", selectedStyle)
 
-      // Get auth token from cookie
-      const token = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("auth_token="))
-        ?.split("=")[1]
-
-      const response = await fetch(`${apiUrl}/images/stylize`, {
+      // Cookie-based session auth: api() sends credentials: include.
+      const response = await api("/images/stylize", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: formData,
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || "Erro ao processar imagem")
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.message || error.error || "Erro ao processar imagem")
       }
 
       const data = await response.json()
@@ -145,7 +131,7 @@ export function ImageStylizer() {
     }
   }
 
-  const handleDownload = async () => {
+  async function handleDownload() {
     if (!processedImage) return
 
     try {
@@ -175,7 +161,6 @@ export function ImageStylizer() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      {/* Upload & Style Selection */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -185,7 +170,6 @@ export function ImageStylizer() {
           <CardDescription>Faça upload da sua imagem e escolha um estilo de transformação</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Image Upload */}
           <div className="space-y-2">
             <Label htmlFor="image-upload">Imagem</Label>
             {!previewUrl ? (
@@ -223,7 +207,6 @@ export function ImageStylizer() {
             )}
           </div>
 
-          {/* Style Selection */}
           <div className="space-y-3">
             <Label>Estilo de Transformação</Label>
             <div className="grid grid-cols-2 gap-2">
@@ -245,7 +228,6 @@ export function ImageStylizer() {
             </div>
           </div>
 
-          {/* Process Button */}
           <Button
             onClick={handleProcess}
             disabled={!selectedFile || !selectedStyle || isProcessing}
@@ -267,7 +249,6 @@ export function ImageStylizer() {
         </CardContent>
       </Card>
 
-      {/* Result Preview */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -304,7 +285,6 @@ export function ImageStylizer() {
         </CardContent>
       </Card>
 
-      {/* History */}
       {history.length > 0 && (
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -316,12 +296,7 @@ export function ImageStylizer() {
               {history.map((item, index) => (
                 <div key={index} className="space-y-2">
                   <div className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted/10 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-                    <Image
-                      src={item.url || "/placeholder.svg"}
-                      alt={`History ${index}`}
-                      fill
-                      className="object-cover"
-                    />
+                    <Image src={item.url || "/placeholder.svg"} alt={`History ${index}`} fill className="object-cover" />
                   </div>
                   <p className="text-xs text-muted-foreground truncate">
                     {STYLE_OPTIONS.find((s) => s.id === item.style)?.name}

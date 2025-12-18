@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/20 to-primary/10 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground bg-gradient-to-br from-background via-accent/20 to-primary/10 dark:via-accent/10 dark:to-primary/15 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">

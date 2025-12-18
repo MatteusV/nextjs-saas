@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Eye, EyeOff, XCircle, AlertCircle } from "lucide-react"
+import { api } from "@/lib/api"
 
 interface FormErrors {
   name?: string
@@ -32,7 +33,7 @@ export function RegisterForm() {
     password: "",
   })
 
-  const validateField = (field: keyof typeof formData, value: string): string | undefined => {
+  function validateField(field: keyof typeof formData, value: string): string | undefined {
     switch (field) {
       case "name":
         if (value.length < 3) return "Nome deve ter no mínimo 3 caracteres"
@@ -48,23 +49,22 @@ export function RegisterForm() {
     return undefined
   }
 
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
+  function handleInputChange(field: keyof typeof formData, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }))
 
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
   }
 
-  const handleBlur = (field: keyof typeof formData) => {
+  function handleBlur(field: keyof typeof formData) {
     const error = validateField(field, formData[field])
     if (error) {
       setErrors((prev) => ({ ...prev, [field]: error }))
     }
   }
 
-  const getPasswordStrength = (password: string) => {
+  function getPasswordStrength(password: string) {
     if (password.length === 0) return { strength: 0, label: "", color: "" }
     if (password.length < 8) return { strength: 1, label: "Fraca", color: "text-destructive" }
 
@@ -81,10 +81,9 @@ export function RegisterForm() {
 
   const passwordStrength = getPasswordStrength(formData.password)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    // Validate all fields
     const newErrors: FormErrors = {}
     Object.keys(formData).forEach((field) => {
       const error = validateField(field as keyof typeof formData, formData[field as keyof typeof formData])
@@ -100,23 +99,14 @@ export function RegisterForm() {
     setErrors({})
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL
-      if (!apiUrl) {
-        throw new Error("API URL não configurada")
-      }
-
-      const response = await fetch(`${apiUrl}/users/register`, {
+      const response = await api("/users/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(formData),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        // Handle error responses
         if (response.status === 400) {
           if (data.error === "User already exists") {
             setErrors({ email: "Este email já está cadastrado" })
@@ -139,11 +129,6 @@ export function RegisterForm() {
         return
       }
 
-      if (data.token) {
-        document.cookie = `auth_token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}` // 7 days
-      }
-
-      // Success (201)
       toast({
         title: "Conta criada com sucesso!",
         description: data.verificationSent ? "Verifique seu email para ativar sua conta" : "Redirecionando...",

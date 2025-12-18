@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5 p-4 relative">
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground bg-gradient-to-br from-background via-muted/20 to-primary/5 dark:via-muted/10 dark:to-primary/15 p-4 relative">
       {/* Theme Toggle */}
       <div className="absolute top-4 right-4">
         <ThemeToggle />
