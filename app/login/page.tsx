@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { LoginForm } from "@/components/login-form"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Sparkles } from "lucide-react"
@@ -26,7 +27,9 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-md">
-        <LoginForm />
+        <Suspense fallback={<div className="h-full w-full animate-pulse rounded-2xl bg-muted/40" />}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   )
