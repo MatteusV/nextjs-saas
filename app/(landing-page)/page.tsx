@@ -144,7 +144,7 @@ export default function LandingPage() {
       <section className="container mx-auto px-4 py-20 lg:py-24">
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">O que entregamos</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground">O que entregamos</p>
             <h2 className="text-3xl font-semibold text-foreground md:text-4xl">
               Padrões inteligentes para equipes que querem criar rápido sem abrir mão da arte.
             </h2>
@@ -184,7 +184,7 @@ export default function LandingPage() {
       <section className="bg-muted/50 py-16">
         <div className="container mx-auto px-4">
           <div className="space-y-4 text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground">
               Planos para sua criatividade
             </p>
             <h3 className="text-3xl font-semibold text-foreground">Escolha o plano que cabe no seu fluxo</h3>
@@ -229,7 +229,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col gap-6">
             <div className="space-y-2 text-center">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground">
                 Como funciona
               </p>
               <h3 className="text-3xl font-semibold text-foreground">3 passos para estilizar em escala</h3>
@@ -253,7 +253,7 @@ export default function LandingPage() {
 
       <section className="container mx-auto px-4 py-20 lg:py-24">
         <div className="space-y-6 text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground">
             Depoimentos
           </p>
           <h3 className="text-3xl font-semibold text-foreground">Quem já acelerou o fluxo</h3>
