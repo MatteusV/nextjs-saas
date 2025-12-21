@@ -6,6 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Upload, Wand2, Download, Loader2, ImageIcon, XCircle } from "lucide-react"
 import Image from "next/image"
@@ -34,6 +35,7 @@ export function ImageStylizer() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [selectedStyle, setSelectedStyle] = useState<string>("")
+  const [promptText, setPromptText] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [processedImage, setProcessedImage] = useState<ProcessedImage | null>(null)
   const [history, setHistory] = useState<ProcessedImage[]>([])
@@ -70,6 +72,7 @@ export function ImageStylizer() {
     setPreviewUrl(null)
     setProcessedImage(null)
     setSelectedStyle("")
+    setPromptText("")
   }
 
   function handleStyleSelect(styleId: string) {
@@ -92,9 +95,12 @@ export function ImageStylizer() {
       const formData = new FormData()
       formData.append("image", selectedFile)
       formData.append("style", selectedStyle)
+      if (promptText.trim()) {
+        formData.append("prompt", promptText.trim())
+      }
 
       // Cookie-based session auth: api() sends credentials: include.
-      const response = await api("/images/stylize", {
+      const response = await api("/ia/send-image", {
         method: "POST",
         body: formData,
       })
@@ -107,7 +113,7 @@ export function ImageStylizer() {
       const data = await response.json()
 
       const processed: ProcessedImage = {
-        url: data.imageUrl,
+        url: data.dataUrl || previewUrl || "/placeholder.svg",
         style: selectedStyle,
         timestamp: Date.now(),
       }
@@ -116,8 +122,8 @@ export function ImageStylizer() {
       setHistory((prev) => [processed, ...prev])
 
       toast({
-        title: "Imagem processada!",
-        description: "Sua imagem foi estilizada com sucesso",
+        title: "Imagem enviada!",
+        description: "A rota recebeu a imagem com sucesso",
       })
     } catch (error) {
       console.error("[v0] Error processing image:", error)
@@ -228,6 +234,17 @@ export function ImageStylizer() {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="prompt">Prompt</Label>
+            <Textarea
+              id="prompt"
+              placeholder="Descreva o resultado que voce quer (opcional)"
+              value={promptText}
+              onChange={(e) => setPromptText(e.target.value)}
+              disabled={isProcessing}
+            />
+          </div>
+
           <Button
             onClick={handleProcess}
             disabled={!selectedFile || !selectedStyle || isProcessing}
@@ -275,11 +292,16 @@ export function ImageStylizer() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center w-full aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10">
+            <div className="relative flex flex-col items-center justify-center w-full aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10">
               <ImageIcon className="w-16 h-16 text-muted-foreground/50 mb-3" />
               <p className="text-sm text-muted-foreground text-center">
                 {isProcessing ? "Processando sua imagem..." : "A imagem transformada aparecerá aqui"}
               </p>
+              {isProcessing ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/70">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : null}
             </div>
           )}
         </CardContent>

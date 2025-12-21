@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { headers } from "next/headers"
 import { CheckCircle2, Mail, XCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -18,12 +19,18 @@ type VerifyResult =
 
 async function verifyEmail(token: string, email: string): Promise<VerifyResult> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL
-  if (!apiUrl) {
-    return { status: "error", message: "API não configurada (NEXT_PUBLIC_API_URL)" }
+  const params = new URLSearchParams({ token, email })
+  let endpoint: string
+  if (apiUrl) {
+    endpoint = `${apiUrl}/users/verify`
+  } else {
+    const headerList = await headers()
+    const host = headerList.get("x-forwarded-host") ?? headerList.get("host")
+    const proto = headerList.get("x-forwarded-proto") ?? "http"
+    endpoint = host ? `${proto}://${host}/api/users/verify` : "http://localhost:3000/api/users/verify"
   }
 
-  const params = new URLSearchParams({ token, email })
-  const response = await fetch(`${apiUrl}/users/verify?${params.toString()}`, { cache: "no-store" })
+  const response = await fetch(`${endpoint}?${params.toString()}`, { cache: "no-store" })
   const data = (await response.json().catch(() => ({}))) as { verified?: boolean; error?: string }
 
   if (response.ok && data.verified) {

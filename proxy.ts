@@ -1,14 +1,53 @@
+import { jwtVerify } from "jose"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-// Keep this file minimal: calling the backend from proxy/middleware can add latency
-// because it may run on every navigation. Route protection is handled in server
-// components (see `app/(protected)/app/layout.tsx`).
-export function proxy(_request: NextRequest) {
-  return NextResponse.next()
+// Keep this file minimal: calling the backend from proxy/middleware can add latency.
+export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  const token = request.cookies.get("session")?.value
+
+  if (!token) {
+    if (path === "/login" || path === "/register" || path === "/") {
+      return NextResponse.next()
+    }
+    if (!path.startsWith("/app") && !path.startsWith("/dashboard")) {
+      return NextResponse.next()
+    }
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = "/login"
+    loginUrl.searchParams.set("redirect", request.nextUrl.pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    return NextResponse.json({ error: "JWT_SECRET is not set" }, { status: 500 })
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret))
+    if (path.startsWith("/dashboard") && payload.role !== "ADMIN") {
+      const appUrl = request.nextUrl.clone()
+      appUrl.pathname = "/app"
+      appUrl.search = ""
+      return NextResponse.redirect(appUrl)
+    }
+    if (path === "/login" || path === "/register") {
+      const appUrl = request.nextUrl.clone()
+      appUrl.pathname = "/app"
+      appUrl.search = ""
+      return NextResponse.redirect(appUrl)
+    }
+    return NextResponse.next()
+  } catch {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = "/login"
+    loginUrl.searchParams.set("redirect", request.nextUrl.pathname)
+    return NextResponse.redirect(loginUrl)
+  }
 }
 
 export const config = {
-  // Match a non-existent route to effectively disable this proxy.
-  matcher: ["/__proxy_disabled__"],
+  matcher: ["/app/:path*", "/login", "/register"],
 }

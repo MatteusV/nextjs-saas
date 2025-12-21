@@ -6,6 +6,10 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { PwaRegister } from "@/components/pwa-register"
+import { PwaInstallBanner } from "@/components/pwa-install-banner"
+import { PwaIosTip } from "@/components/pwa-ios-tip"
+import { OfflineIndicator } from "@/components/offline-indicator"
 
 import { Plus_Jakarta_Sans, IBM_Plex_Mono, Lora, Plus_Jakarta_Sans as V0_Font_Plus_Jakarta_Sans, IBM_Plex_Mono as V0_Font_IBM_Plex_Mono, Lora as V0_Font_Lora } from 'next/font/google'
 
@@ -22,9 +26,17 @@ const ibmPlexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["100", "200", "
 const lora = Lora({ subsets: ["latin"], weight: ["400", "500", "600", "700"] })
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
+  title: "AI Stylizer",
+  description: "Personalize suas imagens com IA",
   generator: "v0.app",
+  applicationName: "AI Stylizer",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#7033ff",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AI Stylizer",
+  },
   icons: {
     icon: [
       {
@@ -55,6 +67,16 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="system" storageKey="saas-theme">
           {children}
           <Toaster />
+          <PwaRegister />
+          <OfflineIndicator />
+          <div className="fixed bottom-4 left-4 right-4 z-50 flex justify-center pointer-events-none">
+            <div className="w-full max-w-lg pointer-events-auto">
+              <PwaInstallBanner />
+              <div className="mt-3">
+                <PwaIosTip />
+              </div>
+            </div>
+          </div>
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />
