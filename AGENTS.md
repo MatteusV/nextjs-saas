@@ -2,10 +2,14 @@
 
 ## Project Structure & Module Organization
 - `app/`: Next.js App Router routes and layouts (e.g., `app/login/page.tsx`, `app/layout.tsx`).
+  - `app/api/`: Route handlers (Stripe, IA, uploads, auth).
+  - `app/dashboard/`: Admin dashboard (guardado por `proxy.ts`).
 - `components/`: Reusable UI and feature components.
   - `components/ui/`: shadcn/ui + Radix primitives (generated components).
 - `hooks/`: Shared React hooks (e.g., `hooks/use-toast.ts`).
 - `lib/`: Small utilities and API helpers (see `lib/utils.ts`, `lib/api.ts`).
+- `server-actions/`: Server Actions (`session`, `admin`, `usage`).
+- `prisma/`: Schema, migrations e seed.
 - `public/`: Static assets (icons, placeholders).
 - `styles/` and `app/globals.css`: Global styling (Tailwind).
 
@@ -17,6 +21,9 @@ This repo uses Next.js + TypeScript and is typically run with pnpm (see `pnpm-lo
 - `pnpm build`: Production build.
 - `pnpm start`: Run the production server after `build`.
 - `pnpm lint`: Run ESLint across the workspace.
+- `pnpm prisma generate`: Generate Prisma client (required before build).
+- `pnpm prisma migrate dev`: Apply migrations.
+- `pnpm prisma db seed`: Seed default plans.
 
 ## Coding Style & Naming Conventions
 - Language: TypeScript + React (`.ts`/`.tsx`). Prefer functional components and hooks.
@@ -34,3 +41,13 @@ No test runner is configured yet (no `__tests__/` or test scripts). If you add t
 
 ## Security & Configuration Tips
 - Do not commit secrets. Use `.env` for local configuration and document required variables in PR descriptions when introducing new ones.
+
+## Data & Billing Notes
+- `Plan.benefits` e `Plan.stylizeLimit` são a fonte de verdade dos cards e do comparativo de planos.
+- `Plan.hasImageStorage` controla persistência no Blob e a aba "Minhas imagens".
+- Stripe usa `stripePriceId` salvo no `Plan` e resolve valores em tempo real.
+
+## PWA Notes
+- Manifest e metadados em `app/manifest.ts`.
+- Service worker em `public/sw.js`.
+- Componentes de instalação em `components/pwa-install-banner.tsx` e `components/pwa-ios-tip.tsx`.

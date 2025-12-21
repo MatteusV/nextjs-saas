@@ -1,30 +1,53 @@
-# User registration page
+# AI Stylizer
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+SaaS para personalizar fotos com IA, gerenciar planos via Stripe e armazenar imagens por plano.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/matteus-v/v0-user-registration-page)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/mBdiTbjE7Bn)
+## Principais features
 
-## Overview
+- Login/registro com verificação de email e redefinição de senha.
+- Geração de imagens com IA (AI Gateway) a partir de imagem + prompt/estilo.
+- Planos Free/Pro/Business com limites e benefícios no banco.
+- Billing Stripe (checkout, portal, cancelamento e webhook).
+- Área `/app` com criação de imagens e, para planos com storage, histórico.
+- Dashboard admin (`/dashboard`) com métricas, preços, benefícios e promoções.
+- PWA com service worker e banner de instalação.
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## Setup rápido
 
-## Deployment
+```bash
+pnpm install
+pnpm prisma generate
+pnpm prisma migrate dev
+pnpm prisma db seed
+pnpm dev
+```
 
-Your project is live at:
+## Variáveis de ambiente
 
-**[https://vercel.com/matteus-v/v0-user-registration-page](https://vercel.com/matteus-v/v0-user-registration-page)**
+Veja `.env.example`. Campos principais:
 
-## Build your app
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `STRIPE_SECRET`, `STRIPE_PUBLIC`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_BUSINESS`
+- `STRIPE_SUCCESS_URL`, `STRIPE_CANCEL_URL`, `STRIPE_WEBHOOK_SECRET`
+- `AI_GATEWAY_API_KEY`
 
-Continue building your app on:
+## Stripe (dev)
 
-**[https://v0.app/chat/mBdiTbjE7Bn](https://v0.app/chat/mBdiTbjE7Bn)**
+Use a Stripe CLI para webhooks em localhost:
 
-## How It Works
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+## PWA
+
+- Manifest em `app/manifest.ts`.
+- Service worker em `public/sw.js`.
+- Banner de instalação e dica iOS em `components/pwa-install-banner.tsx` e `components/pwa-ios-tip.tsx`.
+
+## Notas
+
+- O Prisma Client é gerado em `generated/prisma/client`. Garanta `pnpm prisma generate` antes do build na Vercel.
+- Benefícios e limites dos planos vêm do banco (`Plan.benefits`, `Plan.stylizeLimit`).
+- `Plan.hasImageStorage` controla se as imagens são salvas no Blob e se a aba "Minhas imagens" aparece.
