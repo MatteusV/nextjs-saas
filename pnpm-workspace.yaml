@@ -1,6 +1,0 @@
-ignoredBuiltDependencies:
-  - msw
-
-onlyBuiltDependencies:
-  - '@tailwindcss/oxide'
-  - sharp
