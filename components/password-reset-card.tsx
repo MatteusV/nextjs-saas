@@ -18,7 +18,7 @@ export function PasswordResetCard() {
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(data.error || "Nao foi possivel enviar o link")
+        throw new Error(data.error || "Não foi possível enviar o link")
       }
 
       toast({
@@ -51,7 +51,7 @@ export function PasswordResetCard() {
       <CardFooter className="border-t border-border/60">
         <Button className="w-full" onClick={handleSend} disabled={isSending}>
           {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Enviar link de redefinicao
+          Enviar link de redefinição
         </Button>
       </CardFooter>
     </Card>

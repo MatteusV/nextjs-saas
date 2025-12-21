@@ -1,5 +1,11 @@
 import { put } from "@vercel/blob"
-import { generateImage, gateway } from "ai"
+import { generateText, gateway } from "ai"
+import { prisma } from "@/lib/prisma"
+import { getSessionUser } from "@/server-actions/session"
+import { incrementUserStylizeUsage } from "@/server-actions/usage"
+
+const DEFAULT_IMAGE_EDITOR_PROMPT =
+  "You are a professional photo editor. The user will describe the desired changes and style; apply them to the provided photo while keeping the subject recognizable. Preserve identity, proportions, and core features, avoid unwanted artifacts, and keep lighting, shadows, and color grading consistent with the requested style. Only edit what the user asks; do not add unrelated elements."
 
 function getExtensionFromMediaType(mediaType: string) {
   const map: Record<string, string> = {
@@ -59,7 +65,7 @@ async function prepareEndpointForReceiveImage(request: Request) {
     const base64Image = buffer.toString("base64")
     const dataUrl = `data:${imageFile.type};base64,${base64Image}`
 
-    return { dataUrl, prompt, style, imageFile }
+    return { dataUrl, prompt, style, imageFile, imageBuffer: buffer }
   } catch (error) {
     console.error("[API] Error processing image:", error)
     return Response.json(
@@ -70,35 +76,68 @@ async function prepareEndpointForReceiveImage(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const sessionUser = await getSessionUser()
+  if (!sessionUser) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const data = await prepareEndpointForReceiveImage(request)
   if (data instanceof Response) {
     return data
   }
-  const { dataUrl, prompt, style, imageFile } = data
+  const { prompt, style, imageFile, imageBuffer } = data
 
-  const modelId = process.env.AI_IMAGE_MODEL ?? "replicate/black-forest-labs/flux-1-schnell"
   const combinedPrompt = [prompt.trim(), style.trim() && `Estilo: ${style.trim()}`]
     .filter(Boolean)
     .join("\n")
+  const shouldPersist = sessionUser.plan?.hasImageStorage ?? false
 
   try {
-    const result = await generateImage({
-      model: gateway.imageModel(modelId),
-      prompt: combinedPrompt,
+    const result = await generateText({
+      model: gateway.languageModel("google/gemini-2.5-flash-image-preview"),
+      messages: [
+        { role: "system", content: DEFAULT_IMAGE_EDITOR_PROMPT },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: combinedPrompt },
+            { type: "image", image: imageBuffer, mediaType: imageFile.type },
+          ],
+        },
+      ],
     })
 
-    const generatedImage = result.image
+    const generatedImage = result.files?.[0]
+    if (!generatedImage) {
+      return Response.json(
+        { error: "Modelo não retornou imagem gerada" },
+        { status: 500 }
+      )
+    }
+
     const outputDataUrl = `data:${generatedImage.mediaType};base64,${generatedImage.base64}`
+    let blobUrl: string | null = null
+    if (shouldPersist) {
+      const extension = getExtensionFromMediaType(generatedImage.mediaType)
+      const blobPath = `user-uploads/${crypto.randomUUID()}.${extension}`
+      const blob = await put(blobPath, Buffer.from(generatedImage.uint8Array), {
+        access: "public",
+        contentType: generatedImage.mediaType,
+        addRandomSuffix: true,
+      })
+      blobUrl = blob.url
 
-    const extension = getExtensionFromMediaType(generatedImage.mediaType)
-    const blobPath = `user-uploads/${crypto.randomUUID()}.${extension}`
-    void put(blobPath, Buffer.from(generatedImage.uint8Array), {
-      access: "public",
-      contentType: generatedImage.mediaType,
-      addRandomSuffix: true,
-    }).catch((error) => {
-      console.error("[API] Error saving blob:", error)
-    })
+      await prisma.userUpload.create({
+        data: {
+          userId: sessionUser.id,
+          url: blob.url,
+          style: style.trim() || null,
+          prompt: combinedPrompt || null,
+        },
+      })
+    }
+
+    await incrementUserStylizeUsage({ userId: sessionUser.id })
 
     return Response.json({
       success: true,
@@ -107,7 +146,8 @@ export async function POST(request: Request) {
       imageType: imageFile.type,
       prompt: combinedPrompt,
       dataUrl: outputDataUrl,
-      blobQueued: true,
+      blobQueued: shouldPersist,
+      blobUrl,
     })
   } catch (error) {
     console.error("[API] Error generating image:", error)

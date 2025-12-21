@@ -49,7 +49,7 @@ export function ProfileEditor({ name, email, pendingEmail }: ProfileEditorProps)
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(data.error || "Nao foi possivel atualizar o perfil")
+        throw new Error(data.error || "Não foi possível atualizar o perfil")
       }
 
       if (data.emailChangeSent) {
@@ -60,13 +60,13 @@ export function ProfileEditor({ name, email, pendingEmail }: ProfileEditorProps)
       } else {
         toast({
           title: "Perfil atualizado",
-          description: "As informacoes foram salvas com sucesso",
+          description: "As informações foram salvas com sucesso",
         })
       }
       router.refresh()
     } catch (submitError) {
       const message =
-        submitError instanceof Error ? submitError.message : "Nao foi possivel atualizar o perfil"
+        submitError instanceof Error ? submitError.message : "Não foi possível atualizar o perfil"
       setError(message)
       toast({
         title: "Erro ao salvar",
@@ -110,7 +110,7 @@ export function ProfileEditor({ name, email, pendingEmail }: ProfileEditorProps)
           </div>
           {pendingEmail ? (
             <p className="text-sm text-muted-foreground">
-              Aguardando confirmacao: <span className="text-foreground">{pendingEmail}</span>
+              Aguardando confirmação: <span className="text-foreground">{pendingEmail}</span>
             </p>
           ) : null}
           {error ? (
@@ -121,7 +121,7 @@ export function ProfileEditor({ name, email, pendingEmail }: ProfileEditorProps)
       <CardFooter className="border-t border-border/60">
         <Button type="submit" form="profile-editor-form" className="w-full" disabled={isSaving}>
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Salvar alteracoes
+          Salvar alterações
         </Button>
       </CardFooter>
     </Card>

@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -14,6 +15,8 @@ import {
   Sparkles,
   Wand2,
 } from "lucide-react"
+import { prisma } from "@/lib/prisma"
+import { getStripePricesByIds } from "@/lib/stripe"
 
 const featureHighlights = [
   {
@@ -58,30 +61,7 @@ const processSteps = [
   { title: "Finalize e compartilhe", body: "Exporte em alta resolução para redes, portfólio ou impressão." },
 ]
 
-const plans = [
-  {
-    name: "Starter",
-    price: "R$ 29",
-    period: "/mês",
-    description: "Para quem quer manter o feed atualizado e cheio de personalidade.",
-    highlights: ["10 imagens/semana", "2 estilos salvos", "Suporte por chat"],
-  },
-  {
-    name: "Essentials",
-    price: "R$ 79",
-    period: "/mês",
-    description: "Ideal para criadores que produzem peças diárias e precisam agilizar o processo.",
-    highlights: ["50 imagens/semana", "Estilos ilimitados", "Integrações com redes sociais"],
-    featured: true,
-  },
-  {
-    name: "Pro",
-    price: "R$ 149",
-    period: "/mês",
-    description: "Para projetos maiores com foco em exportar múltiplas versões e backups automáticos.",
-    highlights: ["Imagens ilimitadas", "Estilos privados compartilháveis", "Consultoria rápida"],
-  },
-]
+const orderedPlans = ["FREE_TIER", "PRO", "BUSINESS"]
 
 const testimonials = [
   {
@@ -96,7 +76,56 @@ const testimonials = [
   },
 ]
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const plans = await prisma.plan.findMany()
+  const sortedPlans = plans.sort(
+    (a, b) => orderedPlans.indexOf(a.id) - orderedPlans.indexOf(b.id)
+  )
+  const pricesById = await getStripePricesByIds(
+    sortedPlans.map((plan) => plan.stripePriceId).filter(Boolean) as string[]
+  )
+
+  const plansWithPrices = sortedPlans.map((plan) => {
+    const price = plan.stripePriceId ? pricesById[plan.stripePriceId] : null
+    const amount = price?.unit_amount
+    const currency = price?.currency?.toUpperCase()
+    const interval = price?.recurring?.interval
+    const intervalLabel =
+      interval === "month"
+        ? "mês"
+        : interval === "year"
+          ? "ano"
+          : interval === "week"
+            ? "semana"
+            : interval === "day"
+              ? "dia"
+              : interval
+
+    const priceLabel =
+      amount != null && currency
+        ? new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency,
+          }).format(amount / 100) + (intervalLabel ? ` / ${intervalLabel}` : "")
+        : plan.id === "FREE_TIER"
+          ? "R$ 0,00 / mês"
+          : null
+
+    const highlights = plan.benefits ?? []
+
+    const hasStorage = plan.hasImageStorage ?? plan.id !== "FREE_TIER"
+
+    return {
+      ...plan,
+      priceLabel,
+      highlights,
+      featured: plan.id === "PRO",
+      storageLabel: hasStorage ? "Inclui armazenamento das imagens" : "Sem armazenamento",
+    }
+  })
+  const planById = Object.fromEntries(plansWithPrices.map((plan) => [plan.id, plan]))
+  const planColumns = orderedPlans.map((id) => planById[id]).filter(Boolean)
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="bg-gradient-to-br from-background via-background to-primary/5">
@@ -118,9 +147,11 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="flex flex-col items-center gap-3 pt-2 sm:flex-row sm:justify-center lg:justify-start">
-              <Button size="lg">Começar agora</Button>
-              <Button variant="outline" size="lg">
-                Ver planos
+              <Button size="lg" asChild>
+                <Link href="/register">Criar conta</Link>
+              </Button>
+              <Button variant="outline" size="lg" asChild>
+                <Link href="/login">Entrar</Link>
               </Button>
             </div>
           </header>
@@ -193,7 +224,7 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {plans.map((plan) => (
+            {plansWithPrices.map((plan) => (
               <Card
                 key={plan.name}
                 className={`border-border/50 bg-background/90 shadow-xl ${plan.featured ? "border-primary" : ""}`}
@@ -202,25 +233,67 @@ export default function LandingPage() {
                   <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                     {plan.name}
                   </p>
-                  <div className="space-x-1 text-4xl font-semibold text-foreground">
-                    <span>{plan.price}</span>
-                    <span className="text-sm font-medium text-muted-foreground">{plan.period}</span>
+                  <div className="text-4xl font-semibold text-foreground">
+                    {plan.priceLabel ?? "Consulte valores"}
                   </div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    {plan.storageLabel}
+                  </p>
                   <p className="text-sm leading-relaxed text-muted-foreground">{plan.description}</p>
-                  <ul className="space-y-2 text-left text-sm text-muted-foreground">
-                    {plan.highlights.map((highlight) => (
-                      <li key={highlight} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span>{highlight}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button variant={plan.featured ? "default" : "outline"} className="w-full">
-                    Escolher plano
+                  {plan.highlights.length ? (
+                    <ul className="space-y-2 text-left text-sm text-muted-foreground">
+                      {plan.highlights.map((highlight) => (
+                        <li key={highlight} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span>{highlight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <Button variant={plan.featured ? "default" : "outline"} className="w-full" asChild>
+                    <Link href="/register">Criar conta</Link>
                   </Button>
                 </CardContent>
               </Card>
             ))}
+          </div>
+          <div className="mt-12 rounded-3xl border border-border/60 bg-background/95 p-6 shadow-xl">
+            <div className="space-y-2 text-center">
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                Benefícios por plano
+              </p>
+              <p className="text-base text-muted-foreground">
+                Cada plano tem seus próprios benefícios para acompanhar o seu ritmo.
+              </p>
+            </div>
+            <div className="mt-6 grid gap-6 md:grid-cols-3">
+              {planColumns.map((plan) => (
+                <div key={plan.id} className="rounded-2xl border border-border/60 bg-muted/20 p-5">
+                  <div className="space-y-1 text-center">
+                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                      {plan.name}
+                    </p>
+                  <p className="text-lg font-semibold text-foreground">
+                    {plan.priceLabel ?? "Consulte valores"}
+                  </p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    {plan.storageLabel}
+                  </p>
+                </div>
+                  <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+                    {(plan.benefits?.length
+                      ? plan.benefits
+                      : [plan.stylizeLimit ? `${plan.stylizeLimit} imagens/mês` : "Gerações ilimitadas"]
+                    ).map((benefit) => (
+                      <li key={benefit} className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -288,10 +361,14 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
-            <Button size="lg">Experimentar grátis</Button>
-            <Button variant="ghost" size="lg" className="group">
-              Conhecer integrações
-              <ArrowRight className="h-4 w-4 transition-all group-hover:translate-x-1" />
+            <Button size="lg" asChild>
+              <Link href="/register">Criar conta</Link>
+            </Button>
+            <Button variant="ghost" size="lg" className="group" asChild>
+              <Link href="/login">
+                Entrar
+                <ArrowRight className="h-4 w-4 transition-all group-hover:translate-x-1" />
+              </Link>
             </Button>
           </div>
         </div>

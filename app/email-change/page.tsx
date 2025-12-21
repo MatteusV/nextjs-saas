@@ -29,14 +29,14 @@ export default function EmailChangePage() {
         const data = await response.json().catch(() => ({}))
 
         if (!response.ok) {
-          throw new Error(data.error || "Nao foi possivel confirmar a troca.")
+          throw new Error(data.error || "Não foi possível confirmar a troca.")
         }
 
         setStatus("success")
         setMessage("Email atualizado com sucesso.")
       } catch (error) {
         setStatus("error")
-        setMessage(error instanceof Error ? error.message : "Nao foi possivel confirmar a troca.")
+        setMessage(error instanceof Error ? error.message : "Não foi possível confirmar a troca.")
       }
     }
 
@@ -49,7 +49,7 @@ export default function EmailChangePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl font-medium">
             <MailCheck className="h-5 w-5 text-primary" />
-            Confirmacao de email
+            Confirmação de email
           </CardTitle>
           <CardDescription>Finalize a troca do seu endereco de email.</CardDescription>
         </CardHeader>

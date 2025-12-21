@@ -39,7 +39,7 @@ export function StripePortalButton({
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
-        throw new Error(error.error || "Nao foi possivel abrir o portal do Stripe")
+        throw new Error(error.error || "Não foi possível abrir o portal do Stripe")
       }
 
       const data = await response.json()

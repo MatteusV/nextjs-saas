@@ -292,11 +292,16 @@ export function ImageStylizer() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center w-full aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10">
+            <div className="relative flex flex-col items-center justify-center w-full aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10">
               <ImageIcon className="w-16 h-16 text-muted-foreground/50 mb-3" />
               <p className="text-sm text-muted-foreground text-center">
                 {isProcessing ? "Processando sua imagem..." : "A imagem transformada aparecerá aqui"}
               </p>
+              {isProcessing ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/70">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : null}
             </div>
           )}
         </CardContent>

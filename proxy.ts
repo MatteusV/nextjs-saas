@@ -11,7 +11,7 @@ export async function proxy(request: NextRequest) {
     if (path === "/login" || path === "/register" || path === "/") {
       return NextResponse.next()
     }
-    if (!path.startsWith("/app")) {
+    if (!path.startsWith("/app") && !path.startsWith("/dashboard")) {
       return NextResponse.next()
     }
     const loginUrl = request.nextUrl.clone()
@@ -26,7 +26,13 @@ export async function proxy(request: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, new TextEncoder().encode(secret))
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret))
+    if (path.startsWith("/dashboard") && payload.role !== "ADMIN") {
+      const appUrl = request.nextUrl.clone()
+      appUrl.pathname = "/app"
+      appUrl.search = ""
+      return NextResponse.redirect(appUrl)
+    }
     if (path === "/login" || path === "/register") {
       const appUrl = request.nextUrl.clone()
       appUrl.pathname = "/app"

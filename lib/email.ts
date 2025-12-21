@@ -42,7 +42,7 @@ export async function sendVerificationEmail({
       <p>Ola ${name},</p>
       <p>Para ativar sua conta, clique no link abaixo:</p>
       <p><a href="${verificationUrl}">Verificar minha conta</a></p>
-      <p>Se voce nao criou esta conta, ignore este email.</p>
+      <p>Se você não criou esta conta, ignore este email.</p>
     </div>
   `
 
@@ -89,7 +89,7 @@ export async function sendEmailChangeVerification({
       <p>Ola ${name},</p>
       <p>Para confirmar a troca de email, clique no link abaixo:</p>
       <p><a href="${confirmUrl}">Confirmar novo email</a></p>
-      <p>Se voce nao solicitou esta alteracao, ignore este email.</p>
+      <p>Se você não solicitou esta alteração, ignore este email.</p>
     </div>
   `
 
@@ -136,7 +136,7 @@ export async function sendPasswordResetEmail({
       <p>Ola ${name},</p>
       <p>Para redefinir sua senha, clique no link abaixo:</p>
       <p><a href="${resetUrl}">Redefinir senha</a></p>
-      <p>Se voce nao solicitou esta alteracao, ignore este email.</p>
+      <p>Se você não solicitou esta alteração, ignore este email.</p>
     </div>
   `
 

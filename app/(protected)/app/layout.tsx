@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { AppHeader } from "@/components/app-header"
 
 export const metadata: Metadata = {
-  title: "Dashboard - AI Image Stylizer",
+  title: "Painel - AI Image Stylizer",
   description: "Transforme suas imagens com inteligência artificial",
 }
 

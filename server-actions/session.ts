@@ -53,3 +53,17 @@ export async function getSessionUserWithStatus() {
     return { user: null, status: "invalid_token" as SessionStatus }
   }
 }
+
+export async function getCurrentUser() {
+  const user = await getSessionUser()
+  if (!user) {
+    return null
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatarUrl: user.avatarUrl,
+  }
+}

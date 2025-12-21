@@ -1,5 +1,6 @@
 import { PlanSelector } from "@/components/plan-selector"
 import { prisma } from "@/lib/prisma"
+import { getStripePricesByIds } from "@/lib/stripe"
 import { getSessionUserWithStatus } from "@/server-actions/session"
 import {
   Card,
@@ -25,7 +26,7 @@ export default async function PlansPage() {
               Sessao invalida
             </CardTitle>
             <CardDescription>
-              Nao foi possivel validar sua sessao. Faca login novamente ou verifique as variaveis
+              Não foi possível validar sua sessão. Faça login novamente ou verifique as variáveis
               de ambiente no servidor.
             </CardDescription>
           </CardHeader>
@@ -52,6 +53,42 @@ export default async function PlansPage() {
     (a, b) => orderedPlans.indexOf(a.id) - orderedPlans.indexOf(b.id)
   )
 
+  const pricesById = await getStripePricesByIds(
+    sortedPlans.map((plan) => plan.stripePriceId).filter(Boolean) as string[]
+  )
+
+  const plansWithPrices = sortedPlans.map((plan) => {
+    const price = plan.stripePriceId ? pricesById[plan.stripePriceId] : null
+    const amount = price?.unit_amount
+    const currency = price?.currency?.toUpperCase()
+    const interval = price?.recurring?.interval
+    const intervalLabel =
+      interval === "month"
+        ? "mês"
+        : interval === "year"
+          ? "ano"
+        : interval === "week"
+          ? "semana"
+        : interval === "day"
+          ? "dia"
+              : interval
+
+    const priceLabel =
+      amount != null && currency
+        ? new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency,
+          }).format(amount / 100) + (intervalLabel ? ` / ${intervalLabel}` : "")
+        : plan.id === "FREE_TIER"
+          ? "R$ 0,00 / mês"
+          : null
+
+    return {
+      ...plan,
+      priceLabel,
+    }
+  })
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <header className="space-y-2">
@@ -65,7 +102,7 @@ export default async function PlansPage() {
         </p>
       </header>
 
-      <PlanSelector plans={sortedPlans} currentPlanId={user.subscriptionPlan} />
+      <PlanSelector plans={plansWithPrices} currentPlanId={user.subscriptionPlan} />
 
       <div className="flex justify-start">
         <Button variant="ghost" asChild>

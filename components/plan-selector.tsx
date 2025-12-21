@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Sparkles } from "lucide-react"
+import { Check, Loader2, Sparkles } from "lucide-react"
 
 type Plan = {
   id: string
@@ -16,6 +16,8 @@ type Plan = {
   description?: string | null
   stylizeLimit?: number | null
   stripePriceId?: string | null
+  priceLabel?: string | null
+  benefits?: string[] | null
 }
 
 interface PlanSelectorProps {
@@ -31,7 +33,7 @@ export function PlanSelector({ plans, currentPlanId }: PlanSelectorProps) {
     if (!plan.stripePriceId) {
       toast({
         title: "Plano indisponivel",
-        description: "Este plano nao possui cobranca configurada.",
+        description: "Este plano não possui cobrança configurada.",
         variant: "destructive",
       })
       return
@@ -46,7 +48,7 @@ export function PlanSelector({ plans, currentPlanId }: PlanSelectorProps) {
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(data.error || "Nao foi possivel iniciar o checkout")
+        throw new Error(data.error || "Não foi possível iniciar o checkout")
       }
 
       if (!data?.url) {
@@ -85,11 +87,28 @@ export function PlanSelector({ plans, currentPlanId }: PlanSelectorProps) {
               <p className="text-sm text-muted-foreground">{plan.description ?? "Plano personalizado."}</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
-                {plan.stylizeLimit
-                  ? `${plan.stylizeLimit} geracoes por periodo`
-                  : "Geracoes ilimitadas"}
-              </div>
+              {plan.priceLabel ? (
+                <p className="text-2xl font-semibold">{plan.priceLabel}</p>
+              ) : (
+                <p className="text-2xl font-semibold">Consulte valores</p>
+              )}
+              {plan.benefits?.length ? (
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  {plan.benefits.map((benefit) => (
+                    <li key={benefit} className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span>{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {!plan.benefits?.length ? (
+                <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+                  {plan.stylizeLimit
+                    ? `${plan.stylizeLimit} gerações por período`
+                    : "Gerações ilimitadas"}
+                </div>
+              ) : null}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Sparkles className="h-4 w-4 text-primary" />
                 Atualize o pagamento no checkout do Stripe.

@@ -19,11 +19,18 @@ enum SubscriptionPlan {
   BUSINESS
 }
 
+enum UserRole {
+  DEFAULT
+  ADMIN
+}
+
 model Plan {
   id           SubscriptionPlan @id
   name         String
   description  String?
   stylizeLimit Int?
+  benefits     String[]         @default([])
+  hasImageStorage Boolean       @default(true)
   stripePriceId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -36,7 +43,9 @@ model User {
   name                     String
   email                    String   @unique
   pendingEmail             String?  @unique
+  avatarUrl                String?
   password                 String
+  role                     UserRole @default(DEFAULT)
   subscriptionPlan         SubscriptionPlan @default(FREE_TIER)
   plan                     Plan     @relation(fields: [subscriptionPlan], references: [id])
   stylizeUsageCount        Int      @default(0)
@@ -60,10 +69,30 @@ model UserUpload {
   id             String   @id @default(uuid())
   userId         String
   url            String   @unique
+  style          String?
   prompt         String?  @db.Text
   lastAccessedAt DateTime @default(now())
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminNotification {
+  id        String   @id @default(uuid())
+  title     String
+  body      String   @db.Text
+  audience  String
+  createdAt DateTime @default(now())
+}
+
+model Promotion {
+  id                    String   @id @default(uuid())
+  code                  String   @unique
+  discountPercent       Int
+  maxRedemptions        Int?
+  expiresAt             DateTime?
+  stripeCouponId        String?
+  stripePromotionCodeId String?
+  createdAt             DateTime @default(now())
 }

@@ -62,7 +62,14 @@ export async function POST(request: Request) {
     create: {
       id: "FREE_TIER",
       name: "Free",
-      description: "Plano gratuito",
+      description: "Plano gratuito com limite de usos e sem histórico de imagens.",
+      hasImageStorage: false,
+      benefits: [
+        "10 imagens/mês",
+        "Não salva no histórico",
+        "Editor com IA incluído",
+        "Suporte por email",
+      ],
     },
   })
 

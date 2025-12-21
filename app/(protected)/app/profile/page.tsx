@@ -9,18 +9,20 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { EditableAvatar } from "@/components/editable-avatar"
 import { StripePortalButton } from "@/components/stripe-portal-button"
 import { ProfileEditor } from "@/components/profile-editor"
 import { PasswordResetCard } from "@/components/password-reset-card"
+import { CancelSubscriptionButton } from "@/components/cancel-subscription-button"
 import { prisma } from "@/lib/prisma"
 import { getSessionUserWithStatus } from "@/server-actions/session"
-import { getStripeBillingSummary } from "@/lib/stripe"
+import { getStripeBillingSummary, getStripePricesByIds } from "@/lib/stripe"
 import Link from "next/link"
 import { Crown, Receipt, ShieldCheck, Sparkles, User } from "lucide-react"
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Ativo",
-  trialing: "Periodo de teste",
+  trialing: "Período de teste",
   past_due: "Pagamento pendente",
   canceled: "Cancelado",
   unpaid: "Inadimplente",
@@ -32,6 +34,8 @@ const STATUS_LABELS: Record<string, string> = {
   incomplete_expired: "Expirado",
   paused: "Pausado",
 }
+
+const UPLOADS_LIMIT_FALLBACK = 100
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -66,7 +70,7 @@ function formatInterval(interval?: string | null) {
   if (interval === "year") return "ano"
   if (interval === "week") return "semana"
   if (interval === "day") return "dia"
-  return "mes"
+  return "mês"
 }
 
 export default async function ProfilePage() {
@@ -81,7 +85,7 @@ export default async function ProfilePage() {
               Sessao invalida
             </CardTitle>
             <CardDescription>
-              Nao foi possivel validar sua sessao. Faca login novamente ou verifique as variaveis
+              Não foi possível validar sua sessão. Faça login novamente ou verifique as variáveis
               de ambiente no servidor.
             </CardDescription>
           </CardHeader>
@@ -122,19 +126,50 @@ export default async function ProfilePage() {
   const subscriptionInterval = subscriptionPrice?.recurring?.interval
     ? formatInterval(subscriptionPrice.recurring.interval)
     : null
-  const subscriptionPlanName = subscriptionPrice?.nickname ?? user.plan?.name ?? "Plano Free"
+  const planFromStripe = subscriptionPrice?.id
+    ? await prisma.plan.findFirst({
+        where: { stripePriceId: subscriptionPrice.id },
+      })
+    : null
+  const effectivePlan = planFromStripe ?? user.plan
+  const priceMap = await getStripePricesByIds(
+    effectivePlan?.stripePriceId ? [effectivePlan.stripePriceId] : []
+  )
+  const fallbackPrice = effectivePlan?.stripePriceId
+    ? priceMap[effectivePlan.stripePriceId]
+    : null
+  const fallbackAmount =
+    fallbackPrice?.unit_amount != null
+      ? formatCurrency(fallbackPrice.unit_amount / 100, fallbackPrice.currency.toUpperCase())
+      : null
+  const fallbackInterval = fallbackPrice?.recurring?.interval
+    ? formatInterval(fallbackPrice.recurring.interval)
+    : null
+
+  const subscriptionPlanName =
+    effectivePlan?.name ?? subscriptionPrice?.nickname ?? user.plan?.name ?? "Plano Free"
   const nextBillingDate = subscription?.current_period_end
     ? formatDate(new Date(subscription.current_period_end * 1000))
     : null
   const renewalLabel = subscription
     ? subscription.cancel_at_period_end
-      ? "Cancela ao fim do periodo"
-      : "Renovacao automatica"
-    : "Sem cobranca"
+      ? "Renovação cancelada"
+      : "Renovação automática"
+    : "Sem cobrança"
 
-  const usageLimit = user.plan?.stylizeLimit ?? null
+  const usageLimit = effectivePlan?.stylizeLimit ?? null
   const usageCount = user.stylizeUsageCount ?? 0
   const usagePercent = usageLimit ? Math.min(100, Math.round((usageCount / usageLimit) * 100)) : 0
+  const uploadsLimit = UPLOADS_LIMIT_FALLBACK
+  const uploadsPercent =
+    uploadsLimit > 0 ? Math.min(100, Math.round((uploadsCount / uploadsLimit) * 100)) : 0
+
+  if (planFromStripe && planFromStripe.id !== user.subscriptionPlan) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { subscriptionPlan: planFromStripe.id },
+    })
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -168,14 +203,15 @@ export default async function ProfilePage() {
               <User className="h-5 w-5 text-primary" />
               Seu perfil
             </CardTitle>
-            <CardDescription>Informacoes basicas da conta e status atual.</CardDescription>
+            <CardDescription>Informações básicas da conta e status atual.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4">
-              <Avatar className="h-14 w-14">
-                <AvatarImage src="/placeholder-user.jpg" alt="Foto do usuario" />
-                <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-              </Avatar>
+              <EditableAvatar
+                avatarUrl={user.avatarUrl}
+                name={user.name}
+                size="md"
+              />
               <div>
                 <p className="text-lg font-semibold">{user.name}</p>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -204,7 +240,7 @@ export default async function ProfilePage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Imagens geradas neste periodo</span>
+                  <span className="text-muted-foreground">Imagens geradas neste período</span>
                   <span className="font-medium">
                     {usageLimit ? `${usageCount} / ${usageLimit}` : `${usageCount} / ilimitado`}
                   </span>
@@ -219,22 +255,21 @@ export default async function ProfilePage() {
                 ) : null}
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Uploads salvos</span>
-                  <span className="font-medium">{uploadsCount}</span>
-                </div>
-                <div className="h-2 rounded-full bg-muted">
-                  <div className="h-2 w-1/3 rounded-full bg-primary/70" />
-                </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Uploads salvos</span>
+                <span className="font-medium">
+                  {uploadsCount} / {uploadsLimit}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-muted">
+                <div
+                  className="h-2 rounded-full bg-primary/70 transition-all"
+                  style={{ width: `${uploadsPercent}%` }}
+                />
+              </div>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="justify-between border-t border-border/60">
-            <Button variant="secondary" asChild>
-              <Link href="#editar-perfil">Editar perfil</Link>
-            </Button>
-            <Button variant="ghost">Ver detalhes</Button>
-          </CardFooter>
         </Card>
 
         <Card className="shadow-xl border-border/50 backdrop-blur-sm bg-card/95">
@@ -244,7 +279,7 @@ export default async function ProfilePage() {
               {subscriptionPlanName}
             </CardTitle>
             <CardDescription>
-              {user.plan?.description ?? "Detalhes do seu plano atual."}
+              {effectivePlan?.description ?? "Detalhes do seu plano atual."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -254,10 +289,12 @@ export default async function ProfilePage() {
                   <p className="text-2xl font-semibold">
                     {subscriptionAmount && subscriptionInterval
                       ? `${subscriptionAmount} / ${subscriptionInterval}`
-                      : "Consulte valores no portal"}
+                      : fallbackAmount && fallbackInterval
+                        ? `${fallbackAmount} / ${fallbackInterval}`
+                        : "Consulte valores no portal"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {nextBillingDate ? `Proxima cobranca em ${nextBillingDate}` : "Sem cobranca ativa"}
+                    {nextBillingDate ? `Proxima cobrança em ${nextBillingDate}` : "Sem cobrança ativa"}
                   </p>
                 </div>
                 <Badge variant="secondary">{renewalLabel}</Badge>
@@ -267,7 +304,7 @@ export default async function ProfilePage() {
               </div>
               {!billing.enabled ? (
                 <div className="text-sm text-muted-foreground">
-                  Stripe nao configurado. Defina STRIPE_SECRET_KEY para ativar o portal.
+                  Stripe não configurado. Defina STRIPE_SECRET_KEY para ativar o portal.
                 </div>
               ) : null}
             </div>
@@ -280,7 +317,7 @@ export default async function ProfilePage() {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  {usageLimit ? `${usageLimit} geracoes de imagem por periodo` : "Geracoes ilimitadas"}
+                  {usageLimit ? `${usageLimit} gerações de imagem por período` : "Gerações ilimitadas"}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -301,9 +338,9 @@ export default async function ProfilePage() {
             >
               Gerenciar no Stripe
             </StripePortalButton>
-            <StripePortalButton variant="ghost" className="w-full" disabled={!billing.enabled}>
-              Fazer downgrade
-            </StripePortalButton>
+            {subscription && !subscription.cancel_at_period_end ? (
+              <CancelSubscriptionButton />
+            ) : null}
           </CardFooter>
         </Card>
       </section>
@@ -321,7 +358,7 @@ export default async function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl font-medium">
               <Receipt className="h-5 w-5 text-primary" />
-              Historico de cobrancas
+              Histórico de cobrancas
             </CardTitle>
             <CardDescription>Ultimos recibos gerados pelo Stripe.</CardDescription>
           </CardHeader>

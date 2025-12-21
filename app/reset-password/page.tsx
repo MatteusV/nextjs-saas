@@ -35,7 +35,7 @@ export default function ResetPasswordPage() {
     }
 
     if (password !== confirmPassword) {
-      setError("As senhas nao coincidem.")
+      setError("As senhas não coincidem.")
       return
     }
 
@@ -49,7 +49,7 @@ export default function ResetPasswordPage() {
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(data.error || "Nao foi possivel redefinir a senha.")
+        throw new Error(data.error || "Não foi possível redefinir a senha.")
       }
 
       setSuccess(true)
