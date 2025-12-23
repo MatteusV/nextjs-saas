@@ -3,6 +3,12 @@ import { generateText, gateway } from "ai"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/server-actions/session"
 import { incrementUserStylizeUsage } from "@/server-actions/usage"
+import { normalizePrompt } from "@/lib/rag/normalize-prompt"
+import { embedText } from "@/lib/rag/embeddings"
+import { retrieveRagContext } from "@/lib/rag/retrieve-context"
+import { enrichPrompt } from "@/lib/rag/enrich-prompt"
+import { createGeneration, saveNormalization, updateGeneration } from "@/lib/rag/persist"
+import { storeGenerationEmbeddings } from "@/lib/rag/learn"
 
 const DEFAULT_IMAGE_EDITOR_PROMPT =
   "You are a professional photo editor. The user will describe the desired changes and style; apply them to the provided photo while keeping the subject recognizable. Preserve identity, proportions, and core features, avoid unwanted artifacts, and keep lighting, shadows, and color grading consistent with the requested style. Only edit what the user asks; do not add unrelated elements."
@@ -92,7 +98,42 @@ export async function POST(request: Request) {
     .join("\n")
   const shouldPersist = sessionUser.plan?.hasImageStorage ?? false
 
+  let generationId: string | null = null
+
   try {
+    const generation = await createGeneration({
+      userId: sessionUser.id,
+      rawPrompt: prompt.trim(),
+      stylePrompt: style.trim() || null,
+      inputImageType: imageFile.type,
+      inputImageSize: imageFile.size,
+    })
+    generationId = generation.id
+
+    const normalized = await normalizePrompt({
+      prompt,
+      style,
+    })
+
+    await saveNormalization({
+      generationId: generation.id,
+      normalized,
+    })
+
+    const queryEmbedding = await embedText(normalized.normalizedText)
+    const ragContext = queryEmbedding
+      ? await retrieveRagContext({
+          userId: sessionUser.id,
+          queryEmbedding,
+        })
+      : { userMatches: [], globalMatches: [], tagHints: [] }
+
+    const enrichedPrompt = await enrichPrompt({
+      normalized,
+      context: ragContext,
+    })
+    const finalPrompt = combinedPrompt || normalized.normalizedText || prompt.trim()
+
     const result = await generateText({
       model: gateway.languageModel("google/gemini-2.5-flash-image-preview"),
       messages: [
@@ -100,7 +141,7 @@ export async function POST(request: Request) {
         {
           role: "user",
           content: [
-            { type: "text", text: combinedPrompt },
+            { type: "text", text: finalPrompt },
             { type: "image", image: imageBuffer, mediaType: imageFile.type },
           ],
         },
@@ -117,6 +158,7 @@ export async function POST(request: Request) {
 
     const outputDataUrl = `data:${generatedImage.mediaType};base64,${generatedImage.base64}`
     let blobUrl: string | null = null
+    let userUploadId: string | null = null
     if (shouldPersist) {
       const extension = getExtensionFromMediaType(generatedImage.mediaType)
       const blobPath = `user-uploads/${crypto.randomUUID()}.${extension}`
@@ -127,7 +169,7 @@ export async function POST(request: Request) {
       })
       blobUrl = blob.url
 
-      await prisma.userUpload.create({
+      const upload = await prisma.userUpload.create({
         data: {
           userId: sessionUser.id,
           url: blob.url,
@@ -135,7 +177,27 @@ export async function POST(request: Request) {
           prompt: combinedPrompt || null,
         },
       })
+      userUploadId = upload.id
     }
+
+    await updateGeneration({
+      generationId: generation.id,
+      status: "COMPLETED",
+      finalPrompt,
+      modelUsed: "google/gemini-2.5-flash-image-preview",
+      userUploadId,
+      ragContext: {
+        ...ragContext,
+        enrichedPrompt,
+      },
+    })
+
+    await storeGenerationEmbeddings({
+      generationId: generation.id,
+      userId: sessionUser.id,
+      normalized,
+      finalPrompt,
+    })
 
     await incrementUserStylizeUsage({ userId: sessionUser.id })
 
@@ -144,12 +206,20 @@ export async function POST(request: Request) {
       message: "Imagem gerada com sucesso",
       imageSize: imageFile.size,
       imageType: imageFile.type,
-      prompt: combinedPrompt,
+      prompt: finalPrompt,
+      generationId: generation.id,
       dataUrl: outputDataUrl,
       blobQueued: shouldPersist,
       blobUrl,
     })
   } catch (error) {
+    console.error("[rag] Failed to generate image", error)
+    if (generationId) {
+      await updateGeneration({
+        generationId,
+        status: "FAILED",
+      })
+    }
     console.error("[API] Error generating image:", error)
     return Response.json(
       { error: "Erro ao gerar imagem com IA" },

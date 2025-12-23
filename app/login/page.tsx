@@ -2,8 +2,8 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import { LoginForm } from "@/components/login-form"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Sparkles } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export const metadata: Metadata = {
   title: "Login - AI Image Stylizer",
@@ -21,7 +21,22 @@ export default function LoginPage() {
       {/* Branding */}
       <div className="absolute top-4 left-4">
         <Link href="/" className="flex items-center gap-2 font-semibold text-lg">
-          <Sparkles className="w-6 h-6 text-primary" />
+          <Image
+            src="/icon-light.png"
+            alt="AI Stylizer"
+            width={28}
+            height={28}
+            className="h-7 w-7 dark:hidden"
+            priority
+          />
+          <Image
+            src="/icon-dark.png"
+            alt="AI Stylizer"
+            width={28}
+            height={28}
+            className="hidden h-7 w-7 dark:block"
+            priority
+          />
           <span>AI Stylizer</span>
         </Link>
       </div>

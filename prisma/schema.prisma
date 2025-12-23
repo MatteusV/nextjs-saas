@@ -24,6 +24,19 @@ enum UserRole {
   ADMIN
 }
 
+enum EmbeddingKind {
+  NORMALIZED_PROMPT
+  FINAL_PROMPT
+  VISUAL_TAG
+  FEEDBACK
+}
+
+enum GenerationStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 model Plan {
   id           SubscriptionPlan @id
   name         String
@@ -63,6 +76,11 @@ model User {
   updatedAt                DateTime @updatedAt
 
   uploads UserUpload[]
+  generations ImageGeneration[]
+  feedbacks ImageFeedback[]
+  ragEmbeddings RagEmbedding[]
+  pushSubscriptions PushSubscription[]
+  notificationReads NotificationRead[]
 }
 
 model UserUpload {
@@ -76,6 +94,72 @@ model UserUpload {
   updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generation ImageGeneration?
+}
+
+model ImageGeneration {
+  id                 String          @id @default(uuid())
+  userId             String
+  userUploadId       String?         @unique
+  status             GenerationStatus @default(PENDING)
+  inputImageType     String?
+  inputImageSize     Int?
+  rawPrompt          String          @db.Text
+  stylePrompt        String?
+  finalPrompt        String?         @db.Text
+  modelUsed          String?
+  ragContext         Json?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  upload      UserUpload?        @relation(fields: [userUploadId], references: [id], onDelete: SetNull)
+  normalization PromptNormalization?
+  embeddings  RagEmbedding[]
+  feedbacks   ImageFeedback[]
+}
+
+model PromptNormalization {
+  id            String   @id @default(uuid())
+  generationId  String   @unique
+  intent        String?
+  emotion       String?
+  style         String?
+  visualTags    String[] @default([])
+  parameters    Json?
+  normalizedText String  @db.Text
+  createdAt     DateTime @default(now())
+
+  generation ImageGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
+}
+
+model RagEmbedding {
+  id           String        @id @default(uuid())
+  userId       String?
+  generationId String?
+  feedbackId   String?
+  kind         EmbeddingKind
+  content      String        @db.Text
+  embedding    Unsupported("vector")
+  createdAt    DateTime      @default(now())
+
+  user       User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generation ImageGeneration? @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  feedback   ImageFeedback?   @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+}
+
+model ImageFeedback {
+  id           String   @id @default(uuid())
+  userId       String
+  generationId String
+  rating       Int?
+  comment      String? @db.Text
+  tags         String[] @default([])
+  createdAt    DateTime @default(now())
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generation ImageGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  embeddings RagEmbedding[]
 }
 
 model AdminNotification {
@@ -84,6 +168,32 @@ model AdminNotification {
   body      String   @db.Text
   audience  String
   createdAt DateTime @default(now())
+
+  reads NotificationRead[]
+}
+
+model NotificationRead {
+  id             String   @id @default(uuid())
+  userId         String
+  notificationId String
+  readAt         DateTime @default(now())
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification AdminNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationId])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Promotion {

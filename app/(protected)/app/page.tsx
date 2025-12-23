@@ -10,6 +10,13 @@ export default async function AppPage() {
         where: { userId: user.id },
         orderBy: { createdAt: "desc" },
         take: pageSize,
+        select: {
+          id: true,
+          url: true,
+          prompt: true,
+          style: true,
+          createdAt: true,
+        },
       })
     : []
 

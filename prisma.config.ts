@@ -11,5 +11,9 @@ export default defineConfig({
   },
   datasource: {
     url: env("DATABASE_URL"),
+    shadowDatabaseUrl:
+      process.env.NODE_ENV === "production"
+        ? undefined
+        : process.env.SHADOW_DATABASE_URL,
   },
 });
