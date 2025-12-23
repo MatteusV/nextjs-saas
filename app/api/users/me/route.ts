@@ -2,6 +2,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/server-actions/session"
 import { sendEmailChangeVerification } from "@/lib/email"
+import { resolvePlanFromStripeEmail } from "@/lib/stripe"
 import { randomBytes } from "node:crypto"
 
 const patchSchema = z.object({
@@ -104,12 +105,30 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  if (user.subscriptionPlan === "FREE_TIER") {
+    try {
+      const planFromStripe = await resolvePlanFromStripeEmail({
+        email: user.email,
+        name: user.name,
+      })
+      if (planFromStripe && planFromStripe !== user.subscriptionPlan) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { subscriptionPlan: planFromStripe },
+        })
+      }
+    } catch (error) {
+      console.warn("[users/me] Failed to sync Stripe plan", error)
+    }
+  }
+
   return Response.json({
     user: {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
+      subscriptionPlan: user.subscriptionPlan,
     },
   })
 }

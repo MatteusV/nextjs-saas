@@ -76,6 +76,8 @@ const testimonials = [
   },
 ]
 
+export const revalidate = 300
+
 export default async function LandingPage() {
   const plans = await prisma.plan.findMany()
   const sortedPlans = plans.sort(

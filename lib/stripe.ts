@@ -1,4 +1,6 @@
 import Stripe from "stripe"
+import type { SubscriptionPlan } from "@/generated/prisma/client"
+import { prisma } from "@/lib/prisma"
 
 let stripeClient: Stripe | null = null
 
@@ -144,4 +146,47 @@ export async function getStripePricesByIds(priceIds: string[]) {
   )
 
   return Object.fromEntries(prices)
+}
+
+export async function resolvePlanFromStripeEmail({
+  email,
+  name,
+}: {
+  email: string
+  name?: string | null
+}): Promise<SubscriptionPlan | null> {
+  const stripe = getStripeClient()
+  if (!stripe) {
+    return null
+  }
+
+  const customer = await getStripeCustomerByEmail({ email, name })
+  if (!customer) {
+    return null
+  }
+
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customer.id,
+    status: "all",
+    limit: 5,
+  })
+
+  const subscription =
+    subscriptions.data.find((item) => item.status === "active" || item.status === "trialing") ??
+    null
+  if (!subscription) {
+    return null
+  }
+
+  const priceId = subscription.items.data[0]?.price?.id
+  if (!priceId) {
+    return null
+  }
+
+  const plan = await prisma.plan.findFirst({
+    where: { stripePriceId: priceId },
+    select: { id: true },
+  })
+
+  return plan?.id ?? null
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAdminUser } from "@/server-actions/admin"
+import { sendPushToUsers } from "@/lib/push"
 
 export async function POST(request: Request) {
   const admin = await getAdminUser()
@@ -24,6 +25,33 @@ export async function POST(request: Request) {
       audience,
     },
   })
+
+  const audienceFilter =
+    audience === "pro"
+      ? "PRO"
+      : audience === "business"
+        ? "BUSINESS"
+        : audience === "free"
+          ? "FREE_TIER"
+          : null
+
+  const users = await prisma.user.findMany({
+    where: audienceFilter ? { subscriptionPlan: audienceFilter } : {},
+    select: { id: true },
+  })
+
+  const userIds = users.map((user) => user.id)
+  if (userIds.length) {
+    await sendPushToUsers({
+      userIds,
+      payload: {
+        title,
+        body: bodyText,
+        url: "/app",
+        notificationId: notification.id,
+      },
+    })
+  }
 
   return NextResponse.json({ ok: true, notification })
 }

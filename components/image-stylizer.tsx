@@ -28,6 +28,7 @@ interface ProcessedImage {
   url: string
   style: string
   timestamp: number
+  generationId?: string
 }
 
 export function ImageStylizer() {
@@ -39,6 +40,23 @@ export function ImageStylizer() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [processedImage, setProcessedImage] = useState<ProcessedImage | null>(null)
   const [history, setHistory] = useState<ProcessedImage[]>([])
+  const [feedbackRating, setFeedbackRating] = useState<number | null>(null)
+  const [feedbackComment, setFeedbackComment] = useState("")
+  const [feedbackTags, setFeedbackTags] = useState<string[]>([])
+  const [isSendingFeedback, setIsSendingFeedback] = useState(false)
+
+  const feedbackTagOptions = [
+    "Pele natural",
+    "Fidelidade ao rosto",
+    "Cores fiéis",
+    "Iluminação suave",
+    "Fundo limpo",
+    "Nitidez",
+    "Detalhes finos",
+    "Textura realista",
+    "Estilo consistente",
+    "Recorte perfeito",
+  ]
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -116,10 +134,14 @@ export function ImageStylizer() {
         url: data.dataUrl || previewUrl || "/placeholder.svg",
         style: selectedStyle,
         timestamp: Date.now(),
+        generationId: data.generationId,
       }
 
       setProcessedImage(processed)
       setHistory((prev) => [processed, ...prev])
+      setFeedbackRating(null)
+      setFeedbackComment("")
+      setFeedbackTags([])
 
       toast({
         title: "Imagem enviada!",
@@ -165,6 +187,52 @@ export function ImageStylizer() {
     }
   }
 
+  async function handleSendFeedback() {
+    if (!processedImage?.generationId || !feedbackRating) {
+      toast({
+        title: "Avaliação incompleta",
+        description: "Selecione uma nota para continuar",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSendingFeedback(true)
+
+    try {
+      const response = await api("/ia/feedback", {
+        method: "POST",
+        body: JSON.stringify({
+          generationId: processedImage.generationId,
+          rating: feedbackRating,
+          comment: feedbackComment.trim() || undefined,
+          tags: feedbackTags.length ? feedbackTags : undefined,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.message || error.error || "Erro ao enviar avaliação")
+      }
+
+      toast({
+        title: "Feedback enviado",
+        description: "Obrigado por ajudar a melhorar o resultado",
+      })
+    } catch (error) {
+      toast({
+        title: "Erro ao enviar feedback",
+        description: error instanceof Error ? error.message : "Tente novamente mais tarde",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSendingFeedback(false)
+    }
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
@@ -199,7 +267,13 @@ export function ImageStylizer() {
               </label>
             ) : (
               <div className="relative w-full h-64 rounded-lg overflow-hidden border border-border">
-                <Image src={previewUrl || "/placeholder.svg"} alt="Preview" fill className="object-contain" />
+                <Image
+                  src={previewUrl || "/placeholder.svg"}
+                  alt="Preview"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
                 <Button
                   size="icon"
                   variant="destructive"
@@ -278,7 +352,13 @@ export function ImageStylizer() {
           {processedImage ? (
             <div className="space-y-4">
               <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-border bg-muted/10">
-                <Image src={processedImage.url || "/placeholder.svg"} alt="Processed" fill className="object-contain" />
+                <Image
+                  src={processedImage.url || "/placeholder.svg"}
+                  alt="Processed"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
               </div>
 
               <div className="flex items-center justify-between">
@@ -290,6 +370,75 @@ export function ImageStylizer() {
                   Baixar
                 </Button>
               </div>
+
+              {processedImage.generationId ? (
+                <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
+                  <div>
+                    <p className="text-sm font-medium">Avalie esta imagem</p>
+                    <p className="text-xs text-muted-foreground">
+                      Seu feedback ajuda a ajustar os próximos resultados.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <Button
+                        key={rating}
+                        type="button"
+                        variant={feedbackRating === rating ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFeedbackRating(rating)}
+                        disabled={isSendingFeedback}
+                      >
+                        {rating}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Tags rápidas</p>
+                    <div className="flex flex-wrap gap-2">
+                      {feedbackTagOptions.map((tag) => {
+                        const isSelected = feedbackTags.includes(tag)
+                        return (
+                          <Button
+                            key={tag}
+                            type="button"
+                            variant={isSelected ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={() =>
+                              setFeedbackTags((prev) =>
+                                isSelected ? prev.filter((item) => item !== tag) : [...prev, tag]
+                              )
+                            }
+                            disabled={isSendingFeedback}
+                          >
+                            {tag}
+                          </Button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="feedback-comment">Comentário (opcional)</Label>
+                    <Textarea
+                      id="feedback-comment"
+                      placeholder="Conte o que ficou bom ou o que você esperava diferente."
+                      value={feedbackComment}
+                      onChange={(event) => setFeedbackComment(event.target.value)}
+                      disabled={isSendingFeedback}
+                    />
+                  </div>
+                  <Button onClick={handleSendFeedback} disabled={isSendingFeedback}>
+                    {isSendingFeedback ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando feedback
+                      </>
+                    ) : (
+                      "Enviar avaliação"
+                    )}
+                  </Button>
+                </div>
+              ) : null}
             </div>
           ) : (
             <div className="relative flex flex-col items-center justify-center w-full aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/10">
@@ -318,7 +467,13 @@ export function ImageStylizer() {
               {history.map((item, index) => (
                 <div key={index} className="space-y-2">
                   <div className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted/10 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-                    <Image src={item.url || "/placeholder.svg"} alt={`History ${index}`} fill className="object-cover" />
+                    <Image
+                      src={item.url || "/placeholder.svg"}
+                      alt={`History ${index}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 33vw, (max-width: 1200px) 20vw, 120px"
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground truncate">
                     {STYLE_OPTIONS.find((s) => s.id === item.style)?.name}

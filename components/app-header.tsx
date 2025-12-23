@@ -18,6 +18,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { getCurrentUser } from "@/server-actions/session"
+import { NotificationBell } from "@/components/notification-bell"
 
 interface UserData {
   id: string
@@ -101,6 +102,7 @@ export function AppHeader() {
               <Link href="/dashboard">Dashboard</Link>
             </Button>
           ) : null}
+          <NotificationBell />
           <ThemeToggle />
 
           <DropdownMenu>

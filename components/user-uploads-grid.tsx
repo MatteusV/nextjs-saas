@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Calendar, ImageIcon, Sparkles } from "lucide-react"
+import { Calendar, Download, ImageIcon, Sparkles } from "lucide-react"
 
 export type UploadItem = {
   id: string
@@ -52,6 +52,19 @@ export function UserUploadsGrid({ uploads, onDelete, deletingId }: UserUploadsGr
     []
   )
 
+  async function handleDownload(url: string) {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    const objectUrl = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = objectUrl
+    anchor.download = `imagem-${Date.now()}.png`
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(objectUrl)
+  }
+
   if (!uploads.length) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/70 bg-muted/20 px-6 py-12 text-center">
@@ -75,7 +88,13 @@ export function UserUploadsGrid({ uploads, onDelete, deletingId }: UserUploadsGr
             className="rounded-lg border border-border/60 bg-card/95 p-4 shadow-sm space-y-3"
           >
             <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted/10">
-              <Image src={upload.url} alt="Imagem gerada" fill className="object-cover" />
+              <Image
+                src={upload.url}
+                alt="Imagem gerada"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px"
+              />
             </div>
 
             <div className="flex items-center justify-between">
@@ -106,7 +125,13 @@ export function UserUploadsGrid({ uploads, onDelete, deletingId }: UserUploadsGr
                   </DialogHeader>
                   <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                     <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted/10">
-                      <Image src={upload.url} alt="Imagem gerada" fill className="object-cover" />
+                      <Image
+                        src={upload.url}
+                        alt="Imagem gerada"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 80vw, (max-width: 1200px) 50vw, 420px"
+                      />
                     </div>
                     <div className="space-y-3">
                       <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-sm text-muted-foreground">
@@ -115,6 +140,10 @@ export function UserUploadsGrid({ uploads, onDelete, deletingId }: UserUploadsGr
                       <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
                         ID: <span className="text-foreground">{upload.id}</span>
                       </div>
+                      <Button variant="secondary" className="w-full" onClick={() => handleDownload(upload.url)}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Baixar imagem
+                      </Button>
                       {onDelete ? (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>

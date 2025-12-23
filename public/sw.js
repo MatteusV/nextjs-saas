@@ -1,5 +1,5 @@
-const STATIC_CACHE = "ai-stylizer-static-v2"
-const RUNTIME_CACHE = "ai-stylizer-runtime-v2"
+const STATIC_CACHE = "ai-stylizer-static-v3"
+const RUNTIME_CACHE = "ai-stylizer-runtime-v3"
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -74,5 +74,41 @@ self.addEventListener("fetch", (event) => {
         return response
       })
       .catch(() => caches.match(request))
+  )
+})
+
+self.addEventListener("push", (event) => {
+  const data = event.data ? event.data.json() : {}
+  const title = data.title || "Nova notificação"
+  const body = data.body || ""
+  const url = data.url || "/app"
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      data: { url },
+      icon: "/icon-light-32x32.png",
+      badge: "/icon-light-32x32.png",
+    })
+  )
+})
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close()
+  const targetUrl = event.notification.data?.url || "/app"
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
+      const hadWindow = clientsArr.some((client) => {
+        if (client.url.includes(targetUrl)) {
+          client.focus()
+          return true
+        }
+        return false
+      })
+      if (!hadWindow) {
+        self.clients.openWindow(targetUrl)
+      }
+    })
   )
 })

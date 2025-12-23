@@ -11,27 +11,12 @@ import { PwaInstallBanner } from "@/components/pwa-install-banner"
 import { PwaIosTip } from "@/components/pwa-ios-tip"
 import { OfflineIndicator } from "@/components/offline-indicator"
 
-import { Plus_Jakarta_Sans, IBM_Plex_Mono, Lora, Plus_Jakarta_Sans as V0_Font_Plus_Jakarta_Sans, IBM_Plex_Mono as V0_Font_IBM_Plex_Mono, Lora as V0_Font_Lora } from 'next/font/google'
-
-// Initialize fonts
-const _plusJakartaSans = V0_Font_Plus_Jakarta_Sans({ subsets: ['latin'], weight: ["200","300","400","500","600","700","800"] })
-const _ibmPlexMono = V0_Font_IBM_Plex_Mono({ subsets: ['latin'], weight: ["100","200","300","400","500","600","700"] })
-const _lora = V0_Font_Lora({ subsets: ['latin'], weight: ["400","500","600","700"] })
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["200", "300", "400", "500", "600", "700", "800"],
-})
-const ibmPlexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["100", "200", "300", "400", "500", "600", "700"] })
-const lora = Lora({ subsets: ["latin"], weight: ["400", "500", "600", "700"] })
-
 export const metadata: Metadata = {
   title: "AI Stylizer",
   description: "Personalize suas imagens com IA",
   generator: "v0.app",
   applicationName: "AI Stylizer",
   manifest: "/manifest.webmanifest",
-  themeColor: "#7033ff",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -54,6 +39,10 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-icon.png",
   },
+}
+
+export const viewport = {
+  themeColor: "#7033ff",
 }
 
 export default function RootLayout({
