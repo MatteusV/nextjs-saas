@@ -19,6 +19,7 @@ import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { getCurrentUser } from "@/server-actions/session"
 import { NotificationBell } from "@/components/notification-bell"
+import Image from "next/image"
 
 interface UserData {
   id: string

@@ -6,6 +6,12 @@ const bodySchema = z.object({
   notificationIds: z.array(z.string().uuid()).min(1),
 })
 
+const audienceByPlan = {
+  FREE_TIER: ["all", "free"],
+  PRO: ["all", "pro"],
+  BUSINESS: ["all", "business"],
+} as const
+
 export async function POST(request: Request) {
   const user = await getSessionUser()
   if (!user) {
@@ -18,15 +24,28 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid payload" }, { status: 400 })
   }
 
-  const now = new Date()
-  await prisma.notificationRead.createMany({
-    data: parsed.data.notificationIds.map((notificationId) => ({
-      notificationId,
-      userId: user.id,
-      readAt: now,
-    })),
-    skipDuplicates: true,
+  const allowedAudiences =
+    audienceByPlan[user.subscriptionPlan as keyof typeof audienceByPlan] ?? ["all"]
+
+  const allowedNotifications = await prisma.adminNotification.findMany({
+    where: {
+      id: { in: parsed.data.notificationIds },
+      audience: { in: allowedAudiences },
+    },
+    select: { id: true },
   })
+
+  if (allowedNotifications.length) {
+    const now = new Date()
+    await prisma.notificationRead.createMany({
+      data: allowedNotifications.map((notification) => ({
+        notificationId: notification.id,
+        userId: user.id,
+        readAt: now,
+      })),
+      skipDuplicates: true,
+    })
+  }
 
   return Response.json({ ok: true })
 }
@@ -37,7 +56,11 @@ export async function PUT() {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const allowedAudiences =
+    audienceByPlan[user.subscriptionPlan as keyof typeof audienceByPlan] ?? ["all"]
+
   const notifications = await prisma.adminNotification.findMany({
+    where: { audience: { in: allowedAudiences } },
     select: { id: true },
   })
 

@@ -24,7 +24,7 @@ const featureHighlights = [
     description:
       "Combine prompts personalizados com filtros construídos para capturar o tom da sua marca.",
     badge: "Automação",
-    icon: <Sparkles className="h-5 w-5" />,
+    icon: <Sparkles className="w-5 h-5 text-primary" />,
   },
   {
     title: "Preview em tempo real",

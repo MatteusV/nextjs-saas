@@ -4,6 +4,7 @@ import { SignJWT } from "jose"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { resolvePlanFromStripeEmail } from "@/lib/stripe"
+import { rateLimit } from "@/lib/rate-limit"
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -13,6 +14,11 @@ const bodySchema = z.object({
 
 
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
+  if (!rateLimit({ key: `login:${ip}`, limit: 10, windowMs: 60_000 })) {
+    return Response.json({ error: "Too many attempts" }, { status: 429 })
+  }
+
   const body = await request.json().catch(() => null)
   const parsed = bodySchema.safeParse(body)
   if (!parsed.success) {
@@ -37,7 +43,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid password" }, { status: 401 })
   }
 
-  if (user.subscriptionPlan === "FREE_TIER") {
+  if (user.subscriptionPlan === "FREE_TIER" && user.verifiedAt) {
     try {
       const planFromStripe = await resolvePlanFromStripeEmail({
         email: normalizedEmail,

@@ -1,8 +1,12 @@
 import { randomBytes } from "node:crypto"
+import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import { getSessionUser } from "@/server-actions/session"
 import { sendPasswordResetEmail } from "@/lib/email"
 import { rateLimit } from "@/lib/rate-limit"
+
+const bodySchema = z.object({
+  email: z.string().email(),
+})
 
 const PASSWORD_RESET_COOLDOWN_MS = 5 * 60 * 1000
 
@@ -22,23 +26,30 @@ function getBaseUrl(request: Request) {
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (!rateLimit({ key: `password-reset:${ip}`, limit: 5, windowMs: 60_000 })) {
+  if (!rateLimit({ key: `password-reset-email:${ip}`, limit: 5, windowMs: 60_000 })) {
     return Response.json({ error: "Too many attempts" }, { status: 429 })
   }
 
-  const user = await getSessionUser()
+  const body = await request.json().catch(() => null)
+  const parsed = bodySchema.safeParse(body)
+  if (!parsed.success) {
+    return Response.json({ error: "Invalid payload" }, { status: 400 })
+  }
+
+  const normalizedEmail = parsed.data.email.toLowerCase().trim()
+  const user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  })
+
   if (!user) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 })
+    return Response.json({ sent: true })
   }
 
   if (
     user.lastPasswordResetSentAt &&
     Date.now() - user.lastPasswordResetSentAt.getTime() < PASSWORD_RESET_COOLDOWN_MS
   ) {
-    return Response.json(
-      { error: "Aguarde alguns minutos para solicitar um novo link." },
-      { status: 429 }
-    )
+    return Response.json({ sent: true })
   }
 
   const token = randomBytes(32).toString("hex")
@@ -55,18 +66,11 @@ export async function POST(request: Request) {
 
   const baseUrl = getBaseUrl(request)
   const resetUrl = `${baseUrl}/reset-password?token=${token}`
-  const emailResult = await sendPasswordResetEmail({
+  await sendPasswordResetEmail({
     to: user.email,
     name: user.name,
     resetUrl,
   })
-
-  if (!emailResult.sent) {
-    return Response.json(
-      { error: "Falha ao enviar email. Verifique as credenciais do provedor." },
-      { status: 500 }
-    )
-  }
 
   return Response.json({ sent: true })
 }

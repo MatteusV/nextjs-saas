@@ -105,7 +105,7 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  if (user.subscriptionPlan === "FREE_TIER") {
+  if (user.subscriptionPlan === "FREE_TIER" && user.verifiedAt) {
     try {
       const planFromStripe = await resolvePlanFromStripeEmail({
         email: user.email,

@@ -1,5 +1,5 @@
-const STATIC_CACHE = "ai-stylizer-static-v3"
-const RUNTIME_CACHE = "ai-stylizer-runtime-v3"
+const STATIC_CACHE = "ai-stylizer-static-v4"
+const RUNTIME_CACHE = "ai-stylizer-runtime-v4"
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

@@ -11,6 +11,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react"
 import { api } from "@/lib/api"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 export function LoginForm() {
   const router = useRouter()
@@ -19,6 +27,9 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string>("")
+  const [isResetOpen, setIsResetOpen] = useState(false)
+  const [resetEmail, setResetEmail] = useState("")
+  const [isResetting, setIsResetting] = useState(false)
 
   const [formData, setFormData] = useState({
     email: "",
@@ -75,6 +86,44 @@ export function LoginForm() {
     }
   }
 
+  async function handlePasswordReset() {
+    if (!resetEmail.trim()) {
+      toast({
+        title: "Informe seu email",
+        description: "Digite o email para enviar o link de redefinição.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsResetting(true)
+    try {
+      const response = await api("/users/password-reset/request-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail.trim() }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data.error || "Não foi possível enviar o link")
+      }
+
+      toast({
+        title: "Email enviado",
+        description: "Se este email existir, enviaremos o link de redefinição.",
+      })
+      setIsResetOpen(false)
+    } catch (error) {
+      toast({
+        title: "Erro ao enviar link",
+        description: error instanceof Error ? error.message : "Tente novamente mais tarde",
+        variant: "destructive",
+      })
+    } finally {
+      setIsResetting(false)
+    }
+  }
+
   return (
     <Card className="shadow-xl border-border/50 backdrop-blur-sm bg-card/95">
       <CardHeader>
@@ -125,6 +174,42 @@ export function LoginForm() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="text-xs font-medium text-primary hover:underline"
+                  onClick={() => setResetEmail(formData.email)}
+                  disabled={isLoading}
+                >
+                  Esqueci minha senha
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Redefinir senha</DialogTitle>
+                  <DialogDescription>
+                    Enviaremos um link para você criar uma nova senha.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      disabled={isResetting}
+                    />
+                  </div>
+                  <Button className="w-full" onClick={handlePasswordReset} disabled={isResetting}>
+                    {isResetting ? "Enviando..." : "Enviar link"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>

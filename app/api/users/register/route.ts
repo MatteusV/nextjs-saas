@@ -74,19 +74,6 @@ export async function POST(request: Request) {
     },
   })
 
-  let initialPlan: "FREE_TIER" | "PRO" | "BUSINESS" = "FREE_TIER"
-  try {
-    const planFromStripe = await resolvePlanFromStripeEmail({
-      email: normalizedEmail,
-      name,
-    })
-    if (planFromStripe) {
-      initialPlan = planFromStripe
-    }
-  } catch (error) {
-    console.warn("[register] Failed to sync Stripe plan", error)
-  }
-
   const user = await prisma.user.create({
     data: {
       name,
@@ -94,7 +81,7 @@ export async function POST(request: Request) {
       password: hashedPassword,
       verificationToken: token,
       verificationTokenExpires: expiresAt,
-      subscriptionPlan: initialPlan
+      subscriptionPlan: "FREE_TIER"
     },
     select: {
       id: true,
