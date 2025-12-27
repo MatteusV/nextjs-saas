@@ -19,6 +19,7 @@ import { prisma } from "@/lib/prisma"
 import { getStripePricesByIds } from "@/lib/stripe"
 import { FeaturesStepperClient } from "@/components/features-stepper-client"
 import { ClientOnly } from "@/components/client-only"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const featureHighlights = [
   {
@@ -150,9 +151,14 @@ export default async function LandingPage() {
       <div className="bg-gradient-to-br from-background via-background to-primary/5">
         <div className="container mx-auto px-4 py-20 lg:py-28">
           <header className="flex flex-col gap-4 text-center lg:text-left">
-            <Badge className="self-center lg:self-start" variant="secondary">
-              Nova geração
-            </Badge>
+            <div className="flex items-center justify-between gap-4">
+              <Badge className="self-center lg:self-start" variant="secondary">
+                Nova geração
+              </Badge>
+              <div className="flex justify-end">
+                <ThemeToggle />
+              </div>
+            </div>
             <div className="space-y-6">
               <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">
                 AI Stylizer
