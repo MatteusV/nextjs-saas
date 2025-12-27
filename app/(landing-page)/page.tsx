@@ -17,6 +17,8 @@ import {
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getStripePricesByIds } from "@/lib/stripe"
+import { FeaturesStepperClient } from "@/components/features-stepper-client"
+import { ClientOnly } from "@/components/client-only"
 
 const featureHighlights = [
   {
@@ -24,30 +26,31 @@ const featureHighlights = [
     description:
       "Combine prompts personalizados com filtros construídos para capturar o tom da sua marca.",
     badge: "Automação",
-    icon: <Sparkles className="w-5 h-5 text-primary" />,
+    icon: "Sparkles" as const,
   },
   {
     title: "Preview em tempo real",
     description:
       "Veja como cada ajuste afeta sua imagem e salve versões prontas para redes sociais.",
     badge: "Pré-visualização",
-    icon: <ImageIcon className="h-5 w-5" />,
+    icon: "ImageIcon" as const,
   },
   {
     title: "Integração segura",
     description:
       "Envie suas fotos e defina quem pode usar os estilos criados por você.",
     badge: "Segurança",
-    icon: <ShieldCheck className="h-5 w-5" />,
+    icon: "ShieldCheck" as const,
   },
   {
     title: "Resultados consistentes",
     description:
       "Nossa engine mantém cores, proporções e microinterações alinhadas aos tokens do design system.",
     badge: "Qualidade",
-    icon: <Wand2 className="h-5 w-5" />,
+    icon: "Wand2" as const,
   },
 ]
+
 
 const stats = [
   { label: "Imagens editadas por mês", value: "15k+", detail: "com base em resultados reais" },
@@ -84,7 +87,10 @@ export default async function LandingPage() {
     (a, b) => orderedPlans.indexOf(a.id) - orderedPlans.indexOf(b.id)
   )
   const pricesById = await getStripePricesByIds(
-    sortedPlans.map((plan) => plan.stripePriceId).filter(Boolean) as string[]
+    [
+      ...sortedPlans.map((plan) => plan.stripePriceId),
+      ...sortedPlans.map((plan) => plan.creditPackPriceId),
+    ].filter(Boolean) as string[]
   )
 
   const plansWithPrices = sortedPlans.map((plan) => {
@@ -127,6 +133,17 @@ export default async function LandingPage() {
   })
   const planById = Object.fromEntries(plansWithPrices.map((plan) => [plan.id, plan]))
   const planColumns = orderedPlans.map((id) => planById[id]).filter(Boolean)
+  const creditPackPlan =
+    plansWithPrices.find((plan) => plan.creditPackAmount && plan.creditPackPriceId) ?? null
+  const creditPackPrice =
+    creditPackPlan?.creditPackPriceId ? pricesById[creditPackPlan.creditPackPriceId] : null
+  const creditPackLabel =
+    creditPackPrice?.unit_amount != null && creditPackPrice.currency
+      ? new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: creditPackPrice.currency.toUpperCase(),
+        }).format(creditPackPrice.unit_amount / 100)
+      : null
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -192,25 +209,9 @@ export default async function LandingPage() {
               <Badge variant="outline">Exportadores</Badge>
             </div>
           </div>
-          <div className="grid gap-4">
-            {featureHighlights.map((feature) => (
-              <Card
-                key={feature.title}
-                className="border-border/50 bg-card/95 shadow-xl transition-transform hover:-translate-y-1"
-              >
-                <CardContent className="space-y-3 px-6">
-                  <div className="flex items-center gap-2 text-primary">{feature.icon}</div>
-                  <CardTitle className="text-lg font-semibold text-foreground">
-                    {feature.title}
-                  </CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground">
-                    {feature.description}
-                  </CardDescription>
-                  <Badge variant="secondary">{feature.badge}</Badge>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <ClientOnly fallback={<div className="hidden lg:block" aria-hidden />}>
+            <FeaturesStepperClient features={featureHighlights} />
+          </ClientOnly>
         </div>
       </section>
 
@@ -297,6 +298,59 @@ export default async function LandingPage() {
               ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="container mx-auto px-4 py-16 lg:py-20">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="space-y-4">
+            <Badge variant="secondary" className="w-fit">
+              Créditos avulsos
+            </Badge>
+            <h3 className="text-3xl font-semibold text-foreground">
+              Precisa de mais gerações? Compre pacotes extras sob demanda.
+            </h3>
+            <p className="text-base text-muted-foreground">
+              Quando o limite mensal acabar, você continua criando sem mudar de plano. Os créditos
+              extras entram na sua conta imediatamente após o pagamento.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Badge variant="outline">Sem fidelidade</Badge>
+              <Badge variant="outline">Uso imediato</Badge>
+              <Badge variant="outline">Controle de custo</Badge>
+            </div>
+          </div>
+          <Card className="border-border/60 bg-card/95 shadow-xl">
+            <CardContent className="space-y-4 px-6 pb-6 text-center">
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                Pacote de créditos
+              </p>
+              <div className="text-4xl font-semibold text-foreground">
+                {creditPackLabel ?? "Consulte valores"}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {creditPackPlan?.creditPackAmount
+                  ? `${creditPackPlan.creditPackAmount} créditos por pacote`
+                  : "Disponível após selecionar um plano"}
+              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center justify-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  Ativa o mesmo fluxo de geração do plano atual
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  Ideal para picos de produção e campanhas
+                </div>
+              </div>
+              <Button size="lg" className="w-full" asChild>
+                <Link href="/register">Quero liberar créditos</Link>
+              </Button>
+              <Button variant="ghost" className="w-full" asChild>
+                <Link href="/login">Já tenho conta</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </section>
 

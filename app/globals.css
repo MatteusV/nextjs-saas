@@ -150,4 +150,8 @@
   body {
     @apply bg-background text-foreground;
   }
+  nextjs-portal {
+    left: unset;
+    top: unset;
+  }
 }
