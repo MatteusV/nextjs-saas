@@ -4,15 +4,17 @@ import { getSessionUser } from "@/server-actions/session"
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getSessionUser()
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const { id } = await params
+
   const upload = await prisma.userUpload.findFirst({
-    where: { id: params.id, userId: user.id },
+    where: { id, userId: user.id },
     select: { id: true, url: true },
   })
 

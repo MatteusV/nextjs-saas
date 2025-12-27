@@ -8,6 +8,7 @@ type CreateGenerationParams = {
   stylePrompt?: string | null
   inputImageType?: string | null
   inputImageSize?: number | null
+  parentGenerationId?: string | null
 }
 
 export async function createGeneration({
@@ -16,6 +17,7 @@ export async function createGeneration({
   stylePrompt,
   inputImageType,
   inputImageSize,
+  parentGenerationId,
 }: CreateGenerationParams) {
   return prisma.imageGeneration.create({
     data: {
@@ -24,6 +26,7 @@ export async function createGeneration({
       stylePrompt: stylePrompt ?? null,
       inputImageType: inputImageType ?? null,
       inputImageSize: inputImageSize ?? null,
+      parentGenerationId: parentGenerationId ?? null,
     },
   })
 }

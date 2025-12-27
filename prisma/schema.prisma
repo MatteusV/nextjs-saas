@@ -79,6 +79,8 @@ model User {
   generations ImageGeneration[]
   feedbacks ImageFeedback[]
   ragEmbeddings RagEmbedding[]
+  presets Preset[]
+  derivatives ImageDerivative[]
   pushSubscriptions PushSubscription[]
   notificationReads NotificationRead[]
 }
@@ -101,6 +103,7 @@ model ImageGeneration {
   id                 String          @id @default(uuid())
   userId             String
   userUploadId       String?         @unique
+  parentGenerationId String?
   status             GenerationStatus @default(PENDING)
   inputImageType     String?
   inputImageSize     Int?
@@ -114,9 +117,12 @@ model ImageGeneration {
 
   user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   upload      UserUpload?        @relation(fields: [userUploadId], references: [id], onDelete: SetNull)
+  parent      ImageGeneration?   @relation("GenerationVariants", fields: [parentGenerationId], references: [id], onDelete: Cascade)
+  variants    ImageGeneration[]  @relation("GenerationVariants")
   normalization PromptNormalization?
   embeddings  RagEmbedding[]
   feedbacks   ImageFeedback[]
+  derivatives ImageDerivative[]
 }
 
 model PromptNormalization {
@@ -160,6 +166,44 @@ model ImageFeedback {
   user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   generation ImageGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
   embeddings RagEmbedding[]
+}
+
+model Preset {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  style     String?
+  prompt    String?  @db.Text
+  intent    String?
+  emotion   String?
+  lighting  String?
+  palette   String?
+  framing   String?
+  details   String?
+  tags      String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum DerivativeKind {
+  CROP
+}
+
+model ImageDerivative {
+  id           String         @id @default(uuid())
+  userId       String
+  generationId String
+  kind         DerivativeKind
+  aspectRatio  String
+  width        Int
+  height       Int
+  url          String
+  createdAt    DateTime       @default(now())
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generation ImageGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
 }
 
 model AdminNotification {

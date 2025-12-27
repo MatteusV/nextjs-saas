@@ -9,6 +9,7 @@ import { retrieveRagContext } from "@/lib/rag/retrieve-context"
 import { enrichPrompt } from "@/lib/rag/enrich-prompt"
 import { createGeneration, saveNormalization, updateGeneration } from "@/lib/rag/persist"
 import { storeGenerationEmbeddings } from "@/lib/rag/learn"
+import { buildGuidedPrompt } from "@/lib/prompt/guided"
 
 const DEFAULT_IMAGE_EDITOR_PROMPT =
   "You are a professional photo editor. The user will describe the desired changes and style; apply them to the provided photo while keeping the subject recognizable. Preserve identity, proportions, and core features, avoid unwanted artifacts, and keep lighting, shadows, and color grading consistent with the requested style. Only edit what the user asks; do not add unrelated elements."
@@ -31,6 +32,12 @@ async function prepareEndpointForReceiveImage(request: Request) {
     const imageFile = formData.get("image")
     const prompt = formData.get("prompt")?.toString() || ""
     const style = formData.get("style")?.toString() || ""
+    const guidedIntent = formData.get("guidedIntent")?.toString() || ""
+    const guidedEmotion = formData.get("guidedEmotion")?.toString() || ""
+    const guidedLighting = formData.get("guidedLighting")?.toString() || ""
+    const guidedPalette = formData.get("guidedPalette")?.toString() || ""
+    const guidedFraming = formData.get("guidedFraming")?.toString() || ""
+    const guidedDetails = formData.get("guidedDetails")?.toString() || ""
 
     // Validate image file
     if (!imageFile || !(imageFile instanceof File)) {
@@ -40,8 +47,17 @@ async function prepareEndpointForReceiveImage(request: Request) {
       )
     }
 
+    const hasGuidedFields = [
+      guidedIntent,
+      guidedEmotion,
+      guidedLighting,
+      guidedPalette,
+      guidedFraming,
+      guidedDetails,
+    ].some((value) => value.trim())
+
     // Validate prompt/style
-    if (!prompt.trim() && !style.trim()) {
+    if (!prompt.trim() && !style.trim() && !hasGuidedFields) {
       return Response.json(
         { error: "Prompt ou style é obrigatório" },
         { status: 400 }
@@ -71,7 +87,19 @@ async function prepareEndpointForReceiveImage(request: Request) {
     const base64Image = buffer.toString("base64")
     const dataUrl = `data:${imageFile.type};base64,${base64Image}`
 
-    return { dataUrl, prompt, style, imageFile, imageBuffer: buffer }
+    return {
+      dataUrl,
+      prompt,
+      style,
+      imageFile,
+      imageBuffer: buffer,
+      guidedIntent,
+      guidedEmotion,
+      guidedLighting,
+      guidedPalette,
+      guidedFraming,
+      guidedDetails,
+    }
   } catch (error) {
     console.error("[API] Error processing image:", error)
     return Response.json(
@@ -91,11 +119,33 @@ export async function POST(request: Request) {
   if (data instanceof Response) {
     return data
   }
-  const { prompt, style, imageFile, imageBuffer } = data
+  const {
+    prompt,
+    style,
+    imageFile,
+    imageBuffer,
+    guidedIntent,
+    guidedEmotion,
+    guidedLighting,
+    guidedPalette,
+    guidedFraming,
+    guidedDetails,
+  } = data
 
-  const combinedPrompt = [prompt.trim(), style.trim() && `Estilo: ${style.trim()}`]
-    .filter(Boolean)
-    .join("\n")
+  const guidedPrompt = buildGuidedPrompt({
+    basePrompt: prompt,
+    style,
+    intent: guidedIntent,
+    emotion: guidedEmotion,
+    lighting: guidedLighting,
+    palette: guidedPalette,
+    framing: guidedFraming,
+    details: guidedDetails,
+  })
+
+  const combinedPrompt =
+    guidedPrompt ||
+    [prompt.trim(), style.trim() && `Estilo: ${style.trim()}`].filter(Boolean).join("\n")
   const shouldPersist = sessionUser.plan?.hasImageStorage ?? false
 
   let generationId: string | null = null
@@ -111,7 +161,7 @@ export async function POST(request: Request) {
     generationId = generation.id
 
     const normalized = await normalizePrompt({
-      prompt,
+      prompt: guidedPrompt || prompt,
       style,
     })
 
