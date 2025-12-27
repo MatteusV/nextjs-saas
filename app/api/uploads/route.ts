@@ -19,11 +19,17 @@ export async function GET(request: Request) {
   const style = searchParams.get("style")?.trim() || null
   const query = searchParams.get("q")?.trim() || null
   const range = searchParams.get("range")?.trim() || "all"
+  const collectionId = searchParams.get("collection")?.trim() || null
+  const tagsFilter = searchParams.get("tags")?.trim() || null
+  const favorite = searchParams.get("favorite")?.trim() || "all"
 
   const where: {
     userId: string
     style?: string
     prompt?: { contains: string; mode: "insensitive" }
+    tags?: { hasSome: string[] }
+    favorite?: boolean
+    collectionId?: string | null
     createdAt?: { gte: Date }
   } = { userId: user.id }
 
@@ -33,6 +39,24 @@ export async function GET(request: Request) {
 
   if (query) {
     where.prompt = { contains: query, mode: "insensitive" }
+  }
+
+  if (collectionId) {
+    where.collectionId = collectionId
+  }
+
+  if (favorite === "true") {
+    where.favorite = true
+  }
+
+  if (tagsFilter) {
+    const tags = tagsFilter
+      .split(",")
+      .map((tag) => tag.trim().toLowerCase())
+      .filter(Boolean)
+    if (tags.length) {
+      where.tags = { hasSome: tags }
+    }
   }
 
   if (range === "7d" || range === "30d" || range === "90d") {
@@ -49,6 +73,11 @@ export async function GET(request: Request) {
       orderBy: { createdAt: sort === "oldest" ? "asc" : "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
+      include: {
+        collection: {
+          select: { id: true, name: true },
+        },
+      },
     }),
   ])
 
@@ -57,6 +86,9 @@ export async function GET(request: Request) {
     url: upload.url,
     prompt: upload.prompt,
     style: upload.style,
+    tags: upload.tags,
+    favorite: upload.favorite,
+    collection: upload.collection,
     createdAt: upload.createdAt.toISOString(),
   }))
 

@@ -9,11 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Upload, Wand2, Download, Loader2, ImageIcon, XCircle, BookmarkPlus, Trash2, Crop } from "lucide-react"
+import { Upload, Wand2, Download, Loader2, ImageIcon, XCircle, BookmarkPlus, Trash2, Crop, Save } from "lucide-react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { api } from "@/lib/api"
 import { BeforeAfterCompare } from "@/components/before-after-compare"
+import { SelectCollectionDialog } from "@/components/select-collection-dialog"
 
 const STYLE_OPTIONS = [
   { id: "artistic", name: "Artístico", description: "Estilo de pintura artística" },
@@ -31,7 +32,7 @@ interface ProcessedImage {
   style: string
   timestamp: number
   generationId?: string
-  blobUrl?: string | null
+  finalPrompt?: string | null
 }
 
 interface PresetItem {
@@ -51,13 +52,17 @@ interface PresetItem {
 interface VariationItem {
   url: string
   generationId?: string
-  blobUrl?: string | null
 }
 
 interface CropItem {
   aspectRatio: string
   url: string
   blobUrl?: string | null
+}
+
+type CollectionItem = {
+  id: string
+  name: string
 }
 
 const CROP_OPTIONS = [
@@ -77,6 +82,17 @@ export function ImageStylizer() {
   const [processedImage, setProcessedImage] = useState<ProcessedImage | null>(null)
   const [variations, setVariations] = useState<VariationItem[]>([])
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false)
+  const [collections, setCollections] = useState<CollectionItem[]>([])
+  const [selectedCollectionId, setSelectedCollectionId] = useState("")
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [canSaveUploads, setCanSaveUploads] = useState(true)
+  const [saveTarget, setSaveTarget] = useState<{
+    dataUrl: string
+    generationId?: string
+    style?: string
+    prompt?: string | null
+  } | null>(null)
+  const [isSavingUpload, setIsSavingUpload] = useState(false)
   const [presets, setPresets] = useState<PresetItem[]>([])
   const [presetName, setPresetName] = useState("")
   const [isSavingPreset, setIsSavingPreset] = useState(false)
@@ -159,6 +175,29 @@ export function ImageStylizer() {
     }
   }, [])
 
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadCollections() {
+      try {
+        const response = await api("/collections")
+        if (!response.ok) return
+        const data = await response.json()
+        if (isMounted) {
+          setCollections(data.collections ?? [])
+        }
+      } catch (error) {
+        console.error("[collections] Failed to load collections:", error)
+      }
+    }
+
+    loadCollections()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   function handleClearImage() {
     setSelectedFile(null)
     setPreviewUrl(null)
@@ -225,16 +264,24 @@ export function ImageStylizer() {
         style: selectedStyle,
         timestamp: Date.now(),
         generationId: data.generationId,
-        blobUrl: data.blobUrl ?? null,
+        finalPrompt: data.prompt ?? null,
       }
 
       setProcessedImage(processed)
+      setCanSaveUploads(Boolean(data.canSave))
       setHistory((prev) => [processed, ...prev])
       setVariations([])
       setCropResults([])
       setFeedbackRating(null)
       setFeedbackComment("")
       setFeedbackTags([])
+      setSelectedCollectionId("")
+      setSaveTarget({
+        dataUrl: processed.url,
+        generationId: processed.generationId,
+        style: processed.style,
+        prompt: processed.finalPrompt ?? undefined,
+      })
 
       toast({
         title: "Imagem enviada!",
@@ -346,9 +393,8 @@ export function ImageStylizer() {
       const data = await response.json()
       setVariations(
         (data.variations ?? []).map((item: VariationItem) => ({
-          url: item.blobUrl || item.dataUrl || "/placeholder.svg",
+          url: item.dataUrl || "/placeholder.svg",
           generationId: item.generationId,
-          blobUrl: item.blobUrl ?? null,
         }))
       )
     } catch (error) {
@@ -400,6 +446,48 @@ export function ImageStylizer() {
       })
     } finally {
       setIsCropping(false)
+    }
+  }
+
+  function openSaveDialog(target: { dataUrl: string; generationId?: string; style?: string; prompt?: string | null }) {
+    setSaveTarget(target)
+    setSelectedCollectionId("")
+    setSaveDialogOpen(true)
+  }
+
+  async function handleSaveToCollection() {
+    if (!saveTarget) return
+    setIsSavingUpload(true)
+
+    try {
+      const response = await api("/uploads/save", {
+        method: "POST",
+        body: JSON.stringify({
+          dataUrl: saveTarget.dataUrl,
+          generationId: saveTarget.generationId,
+          style: saveTarget.style,
+          prompt: saveTarget.prompt,
+          collectionId: selectedCollectionId || null,
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data.error || "Não foi possível salvar a imagem")
+      }
+
+      toast({
+        title: "Imagem salva",
+        description: "A imagem foi adicionada à coleção selecionada.",
+      })
+      setSaveDialogOpen(false)
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: error instanceof Error ? error.message : "Tente novamente",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSavingUpload(false)
     }
   }
 
@@ -482,7 +570,8 @@ export function ImageStylizer() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <>
+      <div className="grid gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -764,10 +853,26 @@ export function ImageStylizer() {
                 <Badge variant="secondary" className="text-sm">
                   Estilo: {STYLE_OPTIONS.find((s) => s.id === processedImage.style)?.name}
                 </Badge>
-                <Button onClick={handleDownload} variant="default">
-                  <Download className="mr-2 h-4 w-4" />
-                  Baixar
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={handleDownload} variant="outline">
+                    <Download className="mr-2 h-4 w-4" />
+                    Baixar
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      openSaveDialog({
+                        dataUrl: processedImage.url,
+                        generationId: processedImage.generationId,
+                        style: processedImage.style,
+                        prompt: processedImage.finalPrompt ?? undefined,
+                      })
+                    }
+                    disabled={!canSaveUploads}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar
+                  </Button>
+                </div>
               </div>
 
               {previewUrl ? (
@@ -781,8 +886,8 @@ export function ImageStylizer() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium">Variações rápidas</p>
-                  <p className="text-xs text-muted-foreground">
-                    Gere novas versões mantendo o mesmo estilo e prompt.
+                    <p className="text-xs text-muted-foreground">
+                      Gere novas versões mantendo o mesmo estilo e prompt.
                   </p>
                   </div>
                   <Button
@@ -820,15 +925,34 @@ export function ImageStylizer() {
                             sizes="(max-width: 768px) 50vw, 25vw"
                           />
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => handleDownloadUrl(variation.url, `variation-${index + 1}`)}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          Baixar variação
-                        </Button>
+                        <div className="grid gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => handleDownloadUrl(variation.url, `variation-${index + 1}`)}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Baixar variação
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="w-full"
+                            onClick={() =>
+                              openSaveDialog({
+                                dataUrl: variation.url,
+                                generationId: variation.generationId,
+                                style: selectedStyle,
+                                prompt: processedImage?.finalPrompt ?? undefined,
+                              })
+                            }
+                            disabled={!canSaveUploads}
+                          >
+                            <Save className="mr-2 h-4 w-4" />
+                            Salvar na coleção
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1015,6 +1139,16 @@ export function ImageStylizer() {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+      <SelectCollectionDialog
+        open={saveDialogOpen}
+        onOpenChange={setSaveDialogOpen}
+        collections={collections}
+        selectedId={selectedCollectionId}
+        onSelect={setSelectedCollectionId}
+        onSave={handleSaveToCollection}
+        isSaving={isSavingUpload}
+      />
+    </>
   )
 }

@@ -81,6 +81,7 @@ model User {
   ragEmbeddings RagEmbedding[]
   presets Preset[]
   derivatives ImageDerivative[]
+  collections Collection[]
   pushSubscriptions PushSubscription[]
   notificationReads NotificationRead[]
 }
@@ -91,11 +92,15 @@ model UserUpload {
   url            String   @unique
   style          String?
   prompt         String?  @db.Text
+  tags           String[] @default([])
+  favorite       Boolean  @default(false)
+  collectionId   String?
   lastAccessedAt DateTime @default(now())
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
   generation ImageGeneration?
 }
 
@@ -123,6 +128,20 @@ model ImageGeneration {
   embeddings  RagEmbedding[]
   feedbacks   ImageFeedback[]
   derivatives ImageDerivative[]
+}
+
+model Collection {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploads UserUpload[]
+
+  @@index([userId])
 }
 
 model PromptNormalization {

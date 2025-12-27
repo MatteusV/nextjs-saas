@@ -1,44 +1,23 @@
 import { AppDashboard } from "@/components/app-dashboard"
-import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/server-actions/session"
+import { getUserUploadsSummary } from "@/server-actions/uploads"
 
 export default async function AppPage() {
   const user = await getSessionUser()
   const pageSize = 12
-  const uploads = user
-    ? await prisma.userUpload.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: "desc" },
-        take: pageSize,
-        select: {
-          id: true,
-          url: true,
-          prompt: true,
-          style: true,
-          createdAt: true,
-        },
-      })
-    : []
-
-  const total = user
-    ? await prisma.userUpload.count({
-        where: { userId: user.id },
-      })
-    : 0
-
-  const styles = user
-    ? await prisma.userUpload.findMany({
-        where: { userId: user.id, style: { not: null } },
-        distinct: ["style"],
-        select: { style: true },
-      })
-    : []
-
+  const data = user ? await getUserUploadsSummary(user.id, pageSize) : null
+  const uploads = data?.uploads ?? []
+  const total = data?.total ?? 0
+  const styles = data?.styles ?? []
+  const collections = data?.collections ?? []
   const uploadItems = uploads.map((upload) => ({
     id: upload.id,
     url: upload.url,
     prompt: upload.prompt,
     style: upload.style,
+    tags: upload.tags,
+    favorite: upload.favorite,
+    collection: upload.collection,
     createdAt: upload.createdAt.toISOString(),
   }))
 
@@ -49,7 +28,8 @@ export default async function AppPage() {
         initialHasMore={pageSize < total}
         initialTotal={total}
         pageSize={pageSize}
-        styles={styles.map((item) => item.style ?? "").filter(Boolean)}
+        styles={styles}
+        initialCollections={collections}
         showUploads={user?.plan?.hasImageStorage ?? false}
       />
     </div>

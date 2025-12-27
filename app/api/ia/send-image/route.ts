@@ -1,4 +1,3 @@
-import { put } from "@vercel/blob"
 import { generateText, gateway } from "ai"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/server-actions/session"
@@ -13,17 +12,6 @@ import { buildGuidedPrompt } from "@/lib/prompt/guided"
 
 const DEFAULT_IMAGE_EDITOR_PROMPT =
   "You are a professional photo editor. The user will describe the desired changes and style; apply them to the provided photo while keeping the subject recognizable. Preserve identity, proportions, and core features, avoid unwanted artifacts, and keep lighting, shadows, and color grading consistent with the requested style. Only edit what the user asks; do not add unrelated elements."
-
-function getExtensionFromMediaType(mediaType: string) {
-  const map: Record<string, string> = {
-    "image/png": "png",
-    "image/jpeg": "jpg",
-    "image/webp": "webp",
-    "image/gif": "gif",
-    "image/avif": "avif",
-  }
-  return map[mediaType] ?? "png"
-}
 
 async function prepareEndpointForReceiveImage(request: Request) {
   try {
@@ -146,7 +134,6 @@ export async function POST(request: Request) {
   const combinedPrompt =
     guidedPrompt ||
     [prompt.trim(), style.trim() && `Estilo: ${style.trim()}`].filter(Boolean).join("\n")
-  const shouldPersist = sessionUser.plan?.hasImageStorage ?? false
 
   let generationId: string | null = null
 
@@ -207,35 +194,11 @@ export async function POST(request: Request) {
     }
 
     const outputDataUrl = `data:${generatedImage.mediaType};base64,${generatedImage.base64}`
-    let blobUrl: string | null = null
-    let userUploadId: string | null = null
-    if (shouldPersist) {
-      const extension = getExtensionFromMediaType(generatedImage.mediaType)
-      const blobPath = `user-uploads/${crypto.randomUUID()}.${extension}`
-      const blob = await put(blobPath, Buffer.from(generatedImage.uint8Array), {
-        access: "public",
-        contentType: generatedImage.mediaType,
-        addRandomSuffix: true,
-      })
-      blobUrl = blob.url
-
-      const upload = await prisma.userUpload.create({
-        data: {
-          userId: sessionUser.id,
-          url: blob.url,
-          style: style.trim() || null,
-          prompt: combinedPrompt || null,
-        },
-      })
-      userUploadId = upload.id
-    }
-
     await updateGeneration({
       generationId: generation.id,
       status: "COMPLETED",
       finalPrompt,
       modelUsed: "google/gemini-2.5-flash-image-preview",
-      userUploadId,
       ragContext: {
         ...ragContext,
         enrichedPrompt,
@@ -259,8 +222,7 @@ export async function POST(request: Request) {
       prompt: finalPrompt,
       generationId: generation.id,
       dataUrl: outputDataUrl,
-      blobQueued: shouldPersist,
-      blobUrl,
+      canSave: sessionUser.plan?.hasImageStorage ?? false,
     })
   } catch (error) {
     console.error("[rag] Failed to generate image", error)
