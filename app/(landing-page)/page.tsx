@@ -22,31 +22,31 @@ import { ClientOnly } from "@/components/client-only"
 
 const featureHighlights = [
   {
-    title: "Estilize em escala",
+    title: "Edição com IA guiada",
     description:
-      "Combine prompts personalizados com filtros construídos para capturar o tom da sua marca.",
-    badge: "Automação",
+      "Combine estilo, intenção, emoção e luzes para orientar a IA com precisão.",
+    badge: "Guided prompt",
     icon: "Sparkles" as const,
   },
   {
-    title: "Preview em tempo real",
+    title: "Variações instantâneas",
     description:
-      "Veja como cada ajuste afeta sua imagem e salve versões prontas para redes sociais.",
-    badge: "Pré-visualização",
+      "Gere versões alternativas do mesmo resultado para comparar e escolher.",
+    badge: "Variações",
     icon: "ImageIcon" as const,
   },
   {
-    title: "Integração segura",
+    title: "Coleções e favoritos",
     description:
-      "Envie suas fotos e defina quem pode usar os estilos criados por você.",
-    badge: "Segurança",
+      "Organize resultados em coleções, marque favoritos e retome projetos.",
+    badge: "Organização",
     icon: "ShieldCheck" as const,
   },
   {
-    title: "Resultados consistentes",
+    title: "Controle de custo",
     description:
-      "Nossa engine mantém cores, proporções e microinterações alinhadas aos tokens do design system.",
-    badge: "Qualidade",
+      "Limites por plano, créditos avulsos e histórico de uso em tempo real.",
+    badge: "Monetização",
     icon: "Wand2" as const,
   },
 ]
@@ -59,9 +59,9 @@ const stats = [
 ]
 
 const processSteps = [
-  { title: "Envie suas fotos", body: "Carregue uma ou várias imagens direto do celular ou desktop." },
-  { title: "Personalize o estilo", body: "Ajuste cores, luzes e detalhes com controles guiados em tempo real." },
-  { title: "Finalize e compartilhe", body: "Exporte em alta resolução para redes, portfólio ou impressão." },
+  { title: "Envie sua foto", body: "Carregue a imagem e escolha o estilo ideal para o resultado." },
+  { title: "Refine com IA", body: "Use campos guiados, gere variações e compare antes/depois." },
+  { title: "Organize e entregue", body: "Salve em coleções, baixe e compartilhe quando estiver pronto." },
 ]
 
 const orderedPlans = ["FREE_TIER", "PRO", "BUSINESS"]
@@ -259,44 +259,6 @@ export default async function LandingPage() {
                 </CardContent>
               </Card>
             ))}
-          </div>
-          <div className="mt-12 rounded-3xl border border-border/60 bg-background/95 p-6 shadow-xl">
-            <div className="space-y-2 text-center">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                Benefícios por plano
-              </p>
-              <p className="text-base text-muted-foreground">
-                Cada plano tem seus próprios benefícios para acompanhar o seu ritmo.
-              </p>
-            </div>
-            <div className="mt-6 grid gap-6 md:grid-cols-3">
-              {planColumns.map((plan) => (
-                <div key={plan.id} className="rounded-2xl border border-border/60 bg-muted/20 p-5">
-                  <div className="space-y-1 text-center">
-                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                      {plan.name}
-                    </p>
-                  <p className="text-lg font-semibold text-foreground">
-                    {plan.priceLabel ?? "Consulte valores"}
-                  </p>
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    {plan.storageLabel}
-                  </p>
-                </div>
-                  <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                    {(plan.benefits?.length
-                      ? plan.benefits
-                      : [plan.stylizeLimit ? `${plan.stylizeLimit} imagens/mês` : "Gerações ilimitadas"]
-                    ).map((benefit) => (
-                      <li key={benefit} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span>{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
