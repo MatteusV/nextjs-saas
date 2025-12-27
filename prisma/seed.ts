@@ -10,6 +10,10 @@ type DefaultPlan = {
   stripePriceId?: string
   benefits?: string[]
   hasImageStorage?: boolean
+  watermarkEnabled?: boolean
+  watermarkText?: string
+  creditPackAmount?: number
+  creditPackPriceId?: string
 }
 
 const DEFAULT_PLANS: DefaultPlan[] = [
@@ -19,6 +23,10 @@ const DEFAULT_PLANS: DefaultPlan[] = [
     description: "Plano gratuito com limite de usos e sem histórico de imagens.",
     stylizeLimit: 10,
     hasImageStorage: false,
+    watermarkEnabled: true,
+    watermarkText: "AI Stylizer",
+    creditPackAmount: 10,
+    creditPackPriceId: process.env.STRIPE_PRICE_CREDITS,
     benefits: [
       "10 imagens/mês",
       "Não salva no histórico",
@@ -33,6 +41,10 @@ const DEFAULT_PLANS: DefaultPlan[] = [
     stylizeLimit: 50,
     stripePriceId: process.env.STRIPE_PRICE_PRO,
     hasImageStorage: true,
+    watermarkEnabled: false,
+    watermarkText: "AI Stylizer",
+    creditPackAmount: 10,
+    creditPackPriceId: process.env.STRIPE_PRICE_CREDITS,
     benefits: [
       "50 imagens/mês",
       "Salva no histórico",
@@ -47,6 +59,10 @@ const DEFAULT_PLANS: DefaultPlan[] = [
     stylizeLimit: 100,
     stripePriceId: process.env.STRIPE_PRICE_BUSINESS,
     hasImageStorage: true,
+    watermarkEnabled: false,
+    watermarkText: "AI Stylizer",
+    creditPackAmount: 10,
+    creditPackPriceId: process.env.STRIPE_PRICE_CREDITS,
     benefits: [
       "100 imagens/mês",
       "Salva no histórico",
@@ -65,7 +81,6 @@ const adapter = new PrismaPg({ connectionString })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  await prisma.plan.deleteMany()
   await Promise.all(
     DEFAULT_PLANS.map((plan) =>
       prisma.plan.upsert({
@@ -77,6 +92,10 @@ async function main() {
           stripePriceId: plan.stripePriceId,
           benefits: plan.benefits ?? [],
           hasImageStorage: plan.hasImageStorage ?? false,
+          watermarkEnabled: plan.watermarkEnabled ?? false,
+          watermarkText: plan.watermarkText ?? null,
+          creditPackAmount: plan.creditPackAmount ?? null,
+          creditPackPriceId: plan.creditPackPriceId ?? null,
         },
         create: plan,
       })

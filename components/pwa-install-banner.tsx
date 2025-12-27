@@ -15,8 +15,11 @@ const DISMISS_KEY = "pwa-install-dismissed"
 export function PwaInstallBanner() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
   const [dismissed, setDismissed] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
+
     if (typeof window !== "undefined" && window.sessionStorage.getItem(DISMISS_KEY)) {
       setDismissed(true)
       return
@@ -47,7 +50,7 @@ export function PwaInstallBanner() {
     }
   }
 
-  if (!promptEvent || dismissed) {
+  if (!mounted || !promptEvent || dismissed) {
     return null
   }
 

@@ -14,6 +14,7 @@ import { StripePortalButton } from "@/components/stripe-portal-button"
 import { ProfileEditor } from "@/components/profile-editor"
 import { PasswordResetCard } from "@/components/password-reset-card"
 import { CancelSubscriptionButton } from "@/components/cancel-subscription-button"
+import { CreditPackCard } from "@/components/credit-pack-card"
 import { prisma } from "@/lib/prisma"
 import { getSessionUserWithStatus } from "@/server-actions/session"
 import { getStripeBillingSummary, getStripePricesByIds } from "@/lib/stripe"
@@ -133,7 +134,10 @@ export default async function ProfilePage() {
     : null
   const effectivePlan = planFromStripe ?? user.plan
   const priceMap = await getStripePricesByIds(
-    effectivePlan?.stripePriceId ? [effectivePlan.stripePriceId] : []
+    [
+      effectivePlan?.stripePriceId,
+      effectivePlan?.creditPackPriceId,
+    ].filter(Boolean) as string[]
   )
   const fallbackPrice = effectivePlan?.stripePriceId
     ? priceMap[effectivePlan.stripePriceId]
@@ -145,6 +149,14 @@ export default async function ProfilePage() {
   const fallbackInterval = fallbackPrice?.recurring?.interval
     ? formatInterval(fallbackPrice.recurring.interval)
     : null
+  const creditPackPrice = effectivePlan?.creditPackPriceId
+    ? priceMap[effectivePlan.creditPackPriceId]
+    : null
+  const creditPackAmount = effectivePlan?.creditPackAmount ?? null
+  const creditPackLabel =
+    creditPackPrice?.unit_amount != null
+      ? formatCurrency(creditPackPrice.unit_amount / 100, creditPackPrice.currency.toUpperCase())
+      : null
 
   const subscriptionPlanName =
     effectivePlan?.name ?? subscriptionPrice?.nickname ?? user.plan?.name ?? "Plano Free"
@@ -163,6 +175,12 @@ export default async function ProfilePage() {
   const uploadsLimit = UPLOADS_LIMIT_FALLBACK
   const uploadsPercent =
     uploadsLimit > 0 ? Math.min(100, Math.round((uploadsCount / uploadsLimit) * 100)) : 0
+
+  const creditPurchases = await prisma.creditPurchase.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+  })
 
   if (planFromStripe && planFromStripe.id !== user.subscriptionPlan) {
     await prisma.user.update({
@@ -255,6 +273,15 @@ export default async function ProfilePage() {
                 ) : null}
               </div>
               <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Créditos extras disponíveis</span>
+                  <span className="font-medium">{user.extraCredits}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Use créditos avulsos quando ultrapassar o limite mensal do seu plano.
+                </div>
+              </div>
+              <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Uploads salvos</span>
                 <span className="font-medium">
@@ -329,6 +356,13 @@ export default async function ProfilePage() {
                 </li>
               </ul>
             </div>
+
+            <CreditPackCard
+              packAmount={creditPackAmount}
+              priceLabel={creditPackLabel ? `${creditPackLabel} por pacote` : null}
+              stripeEnabled={billing.enabled}
+              canBuy={Boolean(creditPackAmount && effectivePlan?.creditPackPriceId)}
+            />
           </CardContent>
           <CardFooter className="flex flex-col items-start gap-3 border-t border-border/60">
             <StripePortalButton
@@ -351,6 +385,49 @@ export default async function ProfilePage() {
 
       <section>
         <PasswordResetCard />
+      </section>
+
+      <section>
+        <Card className="shadow-xl border-border/50 backdrop-blur-sm bg-card/95">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl font-medium">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Compras de créditos
+            </CardTitle>
+            <CardDescription>Pacotes avulsos comprados recentemente.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {creditPurchases.length ? (
+              creditPurchases.map((purchase) => (
+                <div
+                  key={purchase.id}
+                  className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 p-4 text-sm"
+                >
+                  <div>
+                    <p className="font-medium">{purchase.credits} créditos</p>
+                    <p className="text-xs text-muted-foreground">{formatMonth(purchase.createdAt)}</p>
+                  </div>
+                  <div className="text-right">
+                    {purchase.amount != null && purchase.currency ? (
+                      <p className="font-medium">
+                        {formatCurrency(purchase.amount / 100, purchase.currency.toUpperCase())}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Valor indisponível</p>
+                    )}
+                    <Badge variant="secondary" className="mt-1">
+                      {purchase.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 p-6 text-sm text-muted-foreground">
+                Nenhuma compra de créditos registrada.
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <section>

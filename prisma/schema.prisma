@@ -44,6 +44,10 @@ model Plan {
   stylizeLimit Int?
   benefits     String[]         @default([])
   hasImageStorage Boolean       @default(true)
+  watermarkEnabled Boolean      @default(false)
+  watermarkText String?
+  creditPackAmount Int?
+  creditPackPriceId String?
   stripePriceId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -63,6 +67,7 @@ model User {
   plan                     Plan     @relation(fields: [subscriptionPlan], references: [id])
   stylizeUsageCount        Int      @default(0)
   stylizeUsagePeriod       String   @default("1970-01")
+  extraCredits             Int      @default(0)
   verifiedAt               DateTime?
   verificationToken        String?
   verificationTokenExpires DateTime?
@@ -84,6 +89,7 @@ model User {
   collections Collection[]
   pushSubscriptions PushSubscription[]
   notificationReads NotificationRead[]
+  creditPurchases CreditPurchase[]
 }
 
 model UserUpload {
@@ -257,6 +263,22 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CreditPurchase {
+  id                   String   @id @default(uuid())
+  userId               String
+  stripeSessionId      String?  @unique
+  stripePaymentIntentId String?
+  credits              Int
+  amount               Int?
+  currency             String?
+  status               String
+  createdAt            DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Promotion {

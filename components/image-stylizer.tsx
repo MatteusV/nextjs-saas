@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge"
 import { api } from "@/lib/api"
 import { BeforeAfterCompare } from "@/components/before-after-compare"
 import { SelectCollectionDialog } from "@/components/select-collection-dialog"
+import Link from "next/link"
+import { BuyCreditsButton } from "@/components/buy-credits-button"
 
 const STYLE_OPTIONS = [
   { id: "artistic", name: "Artístico", description: "Estilo de pintura artística" },
@@ -111,6 +113,11 @@ export function ImageStylizer() {
   const [feedbackComment, setFeedbackComment] = useState("")
   const [feedbackTags, setFeedbackTags] = useState<string[]>([])
   const [isSendingFeedback, setIsSendingFeedback] = useState(false)
+  const [limitNotice, setLimitNotice] = useState<{
+    message: string
+    upgradeUrl: string
+    canBuyCredits: boolean
+  } | null>(null)
 
   const feedbackTagOptions = [
     "Pele natural",
@@ -231,6 +238,7 @@ export function ImageStylizer() {
     }
 
     setIsProcessing(true)
+    setLimitNotice(null)
 
     try {
       const formData = new FormData()
@@ -254,6 +262,14 @@ export function ImageStylizer() {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
+        if (error.code === "LIMIT_REACHED") {
+          setLimitNotice({
+            message: error.error || "Limite de gerações atingido",
+            upgradeUrl: error.upgradeUrl || "/app/plans",
+            canBuyCredits: Boolean(error.canBuyCredits),
+          })
+          return
+        }
         throw new Error(error.message || error.error || "Erro ao processar imagem")
       }
 
@@ -377,6 +393,7 @@ export function ImageStylizer() {
     if (!selectedFile || !processedImage?.generationId) return
 
     setIsGeneratingVariations(true)
+    setLimitNotice(null)
 
     try {
       const formData = new FormData()
@@ -387,6 +404,14 @@ export function ImageStylizer() {
       const response = await api("/ia/variations", { method: "POST", body: formData })
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
+        if (error.code === "LIMIT_REACHED") {
+          setLimitNotice({
+            message: error.error || "Limite de gerações atingido",
+            upgradeUrl: error.upgradeUrl || "/app/plans",
+            canBuyCredits: Boolean(error.canBuyCredits),
+          })
+          return
+        }
         throw new Error(error.error || "Erro ao gerar variações")
       }
 
@@ -837,6 +862,22 @@ export function ImageStylizer() {
           <CardDescription>Sua imagem transformada aparecerá aqui</CardDescription>
         </CardHeader>
         <CardContent>
+          {limitNotice ? (
+            <div className="mb-4 rounded-lg border border-border/60 bg-muted/30 p-4 space-y-3">
+              <div>
+                <p className="text-sm font-medium">Limite atingido</p>
+                <p className="text-xs text-muted-foreground">{limitNotice.message}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="secondary" size="sm">
+                  <Link href={limitNotice.upgradeUrl}>Ver planos</Link>
+                </Button>
+                {limitNotice.canBuyCredits ? (
+                  <BuyCreditsButton size="sm" label="Comprar créditos" />
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           {processedImage ? (
             <div className="space-y-4">
               <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-border bg-muted/10">

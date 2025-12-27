@@ -1,7 +1,8 @@
 import { generateText, gateway } from "ai"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/server-actions/session"
-import { incrementUserStylizeUsage } from "@/server-actions/usage"
+import { consumeStylizeUsage } from "@/server-actions/usage"
+import { applyWatermark } from "@/lib/images/watermark"
 import { normalizePrompt } from "@/lib/rag/normalize-prompt"
 import { embedText } from "@/lib/rag/embeddings"
 import { retrieveRagContext } from "@/lib/rag/retrieve-context"
@@ -63,6 +64,23 @@ export async function POST(request: Request) {
   const stylePrompt = parentGeneration.stylePrompt ?? null
 
   try {
+    const usageResult = await consumeStylizeUsage({ userId: sessionUser.id, amount: count })
+    if (!usageResult.allowed) {
+      return Response.json(
+        {
+          error: "Limite de gerações atingido",
+          code: "LIMIT_REACHED",
+          upgradeUrl: "/app/plans",
+          canBuyCredits: Boolean(
+            sessionUser.plan?.creditPackPriceId && sessionUser.plan?.creditPackAmount
+          ),
+          usageLimit: usageResult.usageLimit,
+          remaining: usageResult.remaining,
+        },
+        { status: 402 }
+      )
+    }
+
     const normalized = await normalizePrompt({
       prompt: basePrompt,
       style: stylePrompt ?? undefined,
@@ -125,7 +143,18 @@ export async function POST(request: Request) {
         continue
       }
 
-      const outputDataUrl = `data:${generatedImage.mediaType};base64,${generatedImage.base64}`
+      const watermarkText = sessionUser.plan?.watermarkText ?? "AI Stylizer"
+      const shouldWatermark = Boolean(sessionUser.plan?.watermarkEnabled)
+
+      const outputBase64 = shouldWatermark
+        ? (await applyWatermark({
+            base64: generatedImage.base64,
+            mediaType: generatedImage.mediaType,
+            text: watermarkText,
+          })).base64
+        : generatedImage.base64
+
+      const outputDataUrl = `data:${generatedImage.mediaType};base64,${outputBase64}`
       await updateGeneration({
         generationId: generation.id,
         status: "COMPLETED",
@@ -143,8 +172,6 @@ export async function POST(request: Request) {
         normalized,
         finalPrompt: basePrompt,
       })
-
-      await incrementUserStylizeUsage({ userId: sessionUser.id })
 
       variations.push({
         dataUrl: outputDataUrl,

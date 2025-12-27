@@ -1,4 +1,5 @@
 import { PlanSelector } from "@/components/plan-selector"
+import { CreditPackCard } from "@/components/credit-pack-card"
 import { prisma } from "@/lib/prisma"
 import { getStripePricesByIds } from "@/lib/stripe"
 import { getSessionUserWithStatus } from "@/server-actions/session"
@@ -53,8 +54,12 @@ export default async function PlansPage() {
     (a, b) => orderedPlans.indexOf(a.id) - orderedPlans.indexOf(b.id)
   )
 
+  const userPlan = sortedPlans.find((plan) => plan.id === user.subscriptionPlan) ?? null
   const pricesById = await getStripePricesByIds(
-    sortedPlans.map((plan) => plan.stripePriceId).filter(Boolean) as string[]
+    [
+      ...sortedPlans.map((plan) => plan.stripePriceId),
+      userPlan?.creditPackPriceId,
+    ].filter(Boolean) as string[]
   )
 
   const plansWithPrices = sortedPlans.map((plan) => {
@@ -89,6 +94,18 @@ export default async function PlansPage() {
     }
   })
 
+  const creditPackPrice = userPlan?.creditPackPriceId
+    ? pricesById[userPlan.creditPackPriceId]
+    : null
+  const creditPackAmount = userPlan?.creditPackAmount ?? null
+  const creditPackLabel =
+    creditPackPrice?.unit_amount != null
+      ? new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: creditPackPrice.currency.toUpperCase(),
+        }).format(creditPackPrice.unit_amount / 100)
+      : null
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <header className="space-y-2">
@@ -103,6 +120,13 @@ export default async function PlansPage() {
       </header>
 
       <PlanSelector plans={plansWithPrices} currentPlanId={user.subscriptionPlan} />
+
+      <CreditPackCard
+        packAmount={creditPackAmount}
+        priceLabel={creditPackLabel ? `${creditPackLabel} por pacote` : null}
+        stripeEnabled
+        canBuy={Boolean(creditPackAmount && userPlan?.creditPackPriceId)}
+      />
 
       <div className="flex justify-start">
         <Button variant="ghost" asChild>

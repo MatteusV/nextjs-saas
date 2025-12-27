@@ -101,6 +101,41 @@ export async function POST(request: Request) {
         "client_reference_id" in dataObject ? (dataObject.client_reference_id as string) : undefined,
     })
 
+    if (event.type === "checkout.session.completed") {
+      const session = dataObject as Stripe.Checkout.Session
+      if (session.mode === "payment" && session.metadata?.kind === "credit_pack") {
+        const credits = Number(session.metadata.credits ?? 0)
+        const resolvedUserId = userId ?? session.metadata.userId ?? null
+
+        if (resolvedUserId && credits > 0) {
+          const existing = await prisma.creditPurchase.findUnique({
+            where: { stripeSessionId: session.id },
+            select: { id: true },
+          })
+
+          if (!existing) {
+            await prisma.$transaction([
+              prisma.creditPurchase.create({
+                data: {
+                  userId: resolvedUserId,
+                  stripeSessionId: session.id,
+                  stripePaymentIntentId: session.payment_intent?.toString() ?? null,
+                  credits,
+                  amount: session.amount_total ?? null,
+                  currency: session.currency ?? null,
+                  status: "COMPLETED",
+                },
+              }),
+              prisma.user.update({
+                where: { id: resolvedUserId },
+                data: { extraCredits: { increment: credits } },
+              }),
+            ])
+          }
+        }
+      }
+    }
+
     if (userId) {
       if (event.type === "customer.subscription.deleted") {
         await prisma.user.update({

@@ -109,6 +109,28 @@ Aumentar ARPU e reduzir churn.
 - Watermark leve no Free (opcional).
 - Limites dinamicos por plano (vindo do banco/Stripe).
 
+### Plano detalhado (o que implementar)
+1) Creditos adicionais (pacotes avulsos)
+- Dados: adicionar saldo de creditos no usuario + tabela de compras (CreditPurchase).
+- Stripe: checkout em modo `payment` com metadata (userId, credits).
+- Webhook: ao finalizar o checkout, registrar compra e incrementar creditos do usuario.
+- UX: card no perfil com saldo atual + botao "Comprar creditos".
+
+2) Upgrade ao atingir limite
+- Servidor: checar limite antes de gerar (inclui variacoes).
+- Resposta: retornar erro com code `LIMIT_REACHED` + CTA para `/app/plans`.
+- UI: mostrar aviso e botao de upgrade/compra de creditos.
+
+3) Watermark leve no Free
+- Plano: flag `watermarkEnabled` e texto configuravel.
+- Servidor: aplicar watermark no output somente quando plano permitir.
+- UX: nao bloquear download; watermark discreto no canto.
+
+4) Limites dinamicos por plano
+- Fonte: plan.stylizeLimit no banco; precos sempre consultados na Stripe.
+- Consumo: reset mensal no servidor, uso do saldo de creditos quando limite esgotar.
+- Perfil: mostrar limite atual e creditos extras disponiveis.
+
 ### Regras
 - Limites sempre checados no servidor.
 - Cobranças com Stripe, sem hardcode de preco.
