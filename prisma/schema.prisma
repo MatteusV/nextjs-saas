@@ -291,3 +291,15 @@ model Promotion {
   stripePromotionCodeId String?
   createdAt             DateTime @default(now())
 }
+
+model AdminAlertSettings {
+  id                     String   @id @default(uuid())
+  highUsage24hLimit      Int      @default(200)
+  premiumModel30dLimit   Int      @default(50)
+  creditOrders30dLimit   Int      @default(3)
+  creditRevenue30dLimit  Int?
+  lastAlertSignature     String?
+  lastAlertSentAt        DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
