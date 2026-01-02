@@ -30,11 +30,6 @@ export function AppDashboard({ showUploads = true, ...props }: AppDashboardProps
 
   return (
     <Tabs value={resolvedTab} onValueChange={handleTabChange} className="space-y-6">
-      <TabsList>
-        <TabsTrigger value="create">Criar imagem</TabsTrigger>
-        {showUploads ? <TabsTrigger value="uploads">Minhas imagens</TabsTrigger> : null}
-      </TabsList>
-
       <TabsContent value="create">
         <div className="space-y-8">
           <div className="space-y-2">

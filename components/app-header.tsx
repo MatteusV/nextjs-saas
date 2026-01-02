@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Link2, LogOut, Sparkles, User } from "lucide-react"
+import { AlignJustify, Link2, LogOut, Sparkles, User } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +37,8 @@ function getInitials(name: string): string {
 
 export function AppHeader() {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [isAdmin, setIsAdmin] = useState(false)
 
@@ -89,20 +91,80 @@ export function AppHeader() {
     }
   }
 
+  const navItems = [
+    { href: "/app", label: "Criar" },
+    { href: "/app?tab=uploads", label: "Minhas imagens" },
+    { href: "/app/plans", label: "Planos" },
+    { href: "/app/integrations", label: "Instagram" },
+  ]
+
+  const isActive = (href: string) => {
+    if (href.startsWith("/app?tab=uploads")) {
+      return pathname === "/app" && searchParams.get("tab") === "uploads"
+    }
+    if (href === "/app") {
+      return pathname === "/app" && (searchParams.get("tab") ?? "create") === "create"
+    }
+    return pathname === href
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
-        <Link href="/app" className="flex items-center gap-2 font-semibold text-lg">
-          <Sparkles className="w-6 h-6 text-primary" />
-          <span>AI Stylizer</span>
-        </Link>
+      <div className="relative flex h-16 justify-between items-center px-4">
+        <div className="z-10 flex items-center">
+          <Link href="/app" className="flex items-center gap-2 font-semibold text-lg">
+            <Sparkles className="w-6 h-6 text-primary" />
+            <span>AI Stylizer</span>
+          </Link>
+        </div>
 
-        <div className="flex items-center gap-2">
+        <nav className="hidden items-center gap-1 md:flex absolute left-1/2 -translate-x-1/2">
+          {navItems.map((item) => (
+            <Button
+              key={item.href}
+              asChild
+              variant={isActive(item.href) ? "secondary" : "ghost"}
+              size="sm"
+            >
+              <Link href={item.href}>{item.label}</Link>
+            </Button>
+          ))}
           {isAdmin ? (
-            <Button variant="secondary" size="sm" asChild>
+            <Button asChild variant={isActive("/dashboard") ? "secondary" : "ghost"} size="sm">
               <Link href="/dashboard">Dashboard</Link>
             </Button>
           ) : null}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Abrir navegação">
+                  <AlignJustify className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {navItems.map((item) => (
+                  <DropdownMenuItem key={item.href} asChild>
+                    <Link href={item.href} className="cursor-pointer">
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+                {isAdmin ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard" className="cursor-pointer">
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <NotificationBell />
           <ThemeToggle />
 
@@ -137,7 +199,7 @@ export function AppHeader() {
               <DropdownMenuItem asChild>
                 <Link href="/app/integrations" className="cursor-pointer">
                   <Link2 className="mr-2 h-4 w-4" />
-                  Integrações
+                  Instagram
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
