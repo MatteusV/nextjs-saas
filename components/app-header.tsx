@@ -108,6 +108,8 @@ export function AppHeader() {
     return pathname === href
   }
 
+  const hideNavigation = pathname === "/app/integrations"
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="relative flex h-16 justify-between items-center px-4">
@@ -118,53 +120,57 @@ export function AppHeader() {
           </Link>
         </div>
 
-        <nav className="hidden items-center gap-1 md:flex absolute left-1/2 -translate-x-1/2">
-          {navItems.map((item) => (
-            <Button
-              key={item.href}
-              asChild
-              variant={isActive(item.href) ? "secondary" : "ghost"}
-              size="sm"
-            >
-              <Link href={item.href}>{item.label}</Link>
-            </Button>
-          ))}
-          {isAdmin ? (
-            <Button asChild variant={isActive("/dashboard") ? "secondary" : "ghost"} size="sm">
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
-          ) : null}
-        </nav>
+        {!hideNavigation ? (
+          <nav className="hidden items-center gap-1 md:flex absolute left-1/2 -translate-x-1/2">
+            {navItems.map((item) => (
+              <Button
+                key={item.href}
+                asChild
+                variant={isActive(item.href) ? "secondary" : "ghost"}
+                size="sm"
+              >
+                <Link href={item.href}>{item.label}</Link>
+              </Button>
+            ))}
+            {isAdmin ? (
+              <Button asChild variant={isActive("/dashboard") ? "secondary" : "ghost"} size="sm">
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+            ) : null}
+          </nav>
+        ) : null}
 
         <div className="flex items-center gap-2">
-          <div className="md:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Abrir navegação">
-                  <AlignJustify className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {navItems.map((item) => (
-                  <DropdownMenuItem key={item.href} asChild>
-                    <Link href={item.href} className="cursor-pointer">
-                      {item.label}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-                {isAdmin ? (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard" className="cursor-pointer">
-                        Dashboard
+          {!hideNavigation ? (
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Abrir navegação">
+                    <AlignJustify className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {navItems.map((item) => (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link href={item.href} className="cursor-pointer">
+                        {item.label}
                       </Link>
                     </DropdownMenuItem>
-                  </>
-                ) : null}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                  ))}
+                  {isAdmin ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard" className="cursor-pointer">
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : null}
           <NotificationBell />
           <ThemeToggle />
 
