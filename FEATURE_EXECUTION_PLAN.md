@@ -178,7 +178,7 @@ Aumentar viralidade e utilidade externa.
 Automatizar publicacao e fluxo externo.
 
 ### Features
-- Instagram (publicar feed/story).
+- Instagram (conectar conta e preparar exportações).
 - Canva (export com template).
 - Google Drive/Dropbox (backup).
 - Zapier/Make (automacoes).

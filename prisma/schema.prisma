@@ -37,6 +37,25 @@ enum GenerationStatus {
   FAILED
 }
 
+enum IntegrationProvider {
+  INSTAGRAM
+}
+
+enum IntegrationJobStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum IntegrationJobType {
+  CONNECT
+  DISCONNECT
+  SYNC
+  EXPORT
+  PUBLISH
+  INSIGHTS
+}
+
 model Plan {
   id           SubscriptionPlan @id
   name         String
@@ -90,6 +109,8 @@ model User {
   pushSubscriptions PushSubscription[]
   notificationReads NotificationRead[]
   creditPurchases CreditPurchase[]
+  integrationAccounts IntegrationAccount[]
+  integrationJobs IntegrationJob[]
 }
 
 model UserUpload {
@@ -302,4 +323,42 @@ model AdminAlertSettings {
   lastAlertSentAt        DateTime?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
+}
+
+model IntegrationAccount {
+  id                 String              @id @default(uuid())
+  userId             String
+  provider           IntegrationProvider
+  providerAccountId  String
+  username           String?
+  accessToken        String
+  refreshToken       String?
+  expiresAt          DateTime?
+  pageId             String?
+  pageName           String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@unique([providerAccountId, provider])
+}
+
+model IntegrationJob {
+  id         String              @id @default(uuid())
+  userId     String
+  provider   IntegrationProvider
+  type       IntegrationJobType
+  status     IntegrationJobStatus
+  error      String?
+  metadata   Json?
+  runAt      DateTime?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([provider, type])
 }

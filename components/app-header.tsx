@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { LogOut, Sparkles, User } from "lucide-react"
+import { Link2, LogOut, Sparkles, User } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -132,6 +132,12 @@ export function AppHeader() {
                 <Link href="/app/profile" className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
                   Perfil
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/app/integrations" className="cursor-pointer">
+                  <Link2 className="mr-2 h-4 w-4" />
+                  Integrações
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
