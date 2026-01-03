@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { AlignJustify, Link2, LogOut, Sparkles, User } from "lucide-react"
+import { AlignJustify, LogOut, Sparkles, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
@@ -19,7 +19,6 @@ import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { getCurrentUser } from "@/server-actions/session"
 import { NotificationBell } from "@/components/notification-bell"
-import Image from "next/image"
 
 interface UserData {
   id: string
@@ -95,7 +94,6 @@ export function AppHeader() {
     { href: "/app", label: "Criar" },
     { href: "/app?tab=uploads", label: "Minhas imagens" },
     { href: "/app/plans", label: "Planos" },
-    { href: "/app/integrations", label: "Instagram" },
   ]
 
   const isActive = (href: string) => {
@@ -108,7 +106,6 @@ export function AppHeader() {
     return pathname === href
   }
 
-  const hideNavigation = pathname === "/app/integrations"
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -120,7 +117,6 @@ export function AppHeader() {
           </Link>
         </div>
 
-        {!hideNavigation ? (
           <nav className="hidden items-center gap-1 md:flex absolute left-1/2 -translate-x-1/2">
             {navItems.map((item) => (
               <Button
@@ -138,10 +134,8 @@ export function AppHeader() {
               </Button>
             ) : null}
           </nav>
-        ) : null}
 
         <div className="flex items-center gap-2">
-          {!hideNavigation ? (
             <div className="md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -170,7 +164,6 @@ export function AppHeader() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          ) : null}
           <NotificationBell />
           <ThemeToggle />
 
@@ -200,12 +193,6 @@ export function AppHeader() {
                 <Link href="/app/profile" className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
                   Perfil
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/app/integrations" className="cursor-pointer">
-                  <Link2 className="mr-2 h-4 w-4" />
-                  Instagram
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
