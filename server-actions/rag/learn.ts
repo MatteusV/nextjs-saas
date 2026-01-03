@@ -1,6 +1,6 @@
-import { embedText } from "@/lib/rag/embeddings"
-import { insertEmbedding } from "@/lib/rag/persist"
-import type { NormalizedPrompt } from "@/lib/rag/types"
+import { embedText } from "@/server-actions/rag/embeddings"
+import { insertEmbedding } from "@/server-actions/rag/persist"
+import type { NormalizedPrompt } from "@/server-actions/rag/types"
 
 type StoreGenerationEmbeddingsParams = {
   generationId: string

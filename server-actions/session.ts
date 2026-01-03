@@ -35,6 +35,7 @@ export async function getSessionUserWithStatus() {
     const { payload } = await jwtVerify(sessionToken, new TextEncoder().encode(secret))
     if (!payload.sub) {
       console.warn("[session] Session token missing subject")
+      cookieStore.delete("session")
       return { user: null, status: "missing_subject" as SessionStatus }
     }
 
@@ -44,12 +45,14 @@ export async function getSessionUserWithStatus() {
     })
 
     if (!user) {
+      cookieStore.delete("session")
       return { user: null, status: "user_not_found" as SessionStatus }
     }
 
     return { user, status: "ok" as SessionStatus }
   } catch (error) {
     console.warn("[session] Failed to verify session token", error)
+    cookieStore.delete("session")
     return { user: null, status: "invalid_token" as SessionStatus }
   }
 }

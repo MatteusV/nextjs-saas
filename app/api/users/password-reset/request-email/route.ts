@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import { sendPasswordResetEmail } from "@/lib/email"
-import { rateLimit } from "@/lib/rate-limit"
+import { sendPasswordResetEmail } from "@/server-actions/email"
+import { rateLimit } from "@/server-actions/rate-limit"
 
 const bodySchema = z.object({
   email: z.string().email(),

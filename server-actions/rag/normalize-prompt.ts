@@ -1,7 +1,7 @@
 import { generateObject, gateway } from "ai"
 import { z } from "zod"
-import { RAG_LANGUAGE_MODEL } from "@/lib/rag/config"
-import type { NormalizedPrompt } from "@/lib/rag/types"
+import { RAG_LANGUAGE_MODEL } from "@/server-actions/rag/config"
+import type { NormalizedPrompt } from "@/server-actions/rag/types"
 
 const normalizationSchema = z.object({
   intent: z.string().min(1).optional(),

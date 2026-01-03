@@ -4,8 +4,9 @@ import { getSessionUser } from "@/server-actions/session"
 import {
   createInstagramMediaContainer,
   publishInstagramMedia,
-} from "@/lib/integrations/instagram"
-import { createIntegrationJob } from "@/lib/integrations/jobs"
+} from "@/server-actions/integrations/instagram"
+import { createIntegrationJob } from "@/server-actions/integrations/jobs"
+import { canUseIntegrations } from "@/utils/integrations"
 
 function parseSchedule(value: unknown) {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -22,6 +23,13 @@ export async function POST(request: Request) {
   const user = await getSessionUser()
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (!canUseIntegrations(user.subscriptionPlan)) {
+    return NextResponse.json(
+      { error: "Integrações disponíveis apenas nos planos Pro e Business." },
+      { status: 403 }
+    )
   }
 
   const payload = await request.json().catch(() => null)

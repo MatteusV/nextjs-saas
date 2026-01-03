@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { api } from "@/lib/api"
+import { api } from "@/utils/api"
 import { Loader2, Mail } from "lucide-react"
 
 export function PasswordResetCard() {

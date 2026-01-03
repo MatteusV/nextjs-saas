@@ -2,13 +2,19 @@ import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 import { randomBytes } from "node:crypto"
 import { getSessionUser } from "@/server-actions/session"
-import { buildInstagramAuthUrl } from "@/lib/integrations/instagram"
+import { buildInstagramAuthUrl } from "@/server-actions/integrations/instagram"
+import { canUseIntegrations } from "@/utils/integrations"
 
 export async function GET(request: Request) {
   const user = await getSessionUser()
   if (!user) {
     const origin = new URL(request.url).origin
     return NextResponse.redirect(new URL("/login", origin))
+  }
+
+  if (!canUseIntegrations(user.subscriptionPlan)) {
+    const origin = new URL(request.url).origin
+    return NextResponse.redirect(new URL("/app/plans", origin))
   }
 
   const authUrl = buildInstagramAuthUrl(randomBytes(16).toString("hex"))

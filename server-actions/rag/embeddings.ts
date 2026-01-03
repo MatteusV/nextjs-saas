@@ -1,5 +1,5 @@
 import { embed, gateway } from "ai"
-import { RAG_EMBEDDING_MODEL, RAG_EMBEDDING_DIMENSION } from "@/lib/rag/config"
+import { RAG_EMBEDDING_MODEL, RAG_EMBEDDING_DIMENSION } from "@/server-actions/rag/config"
 
 export async function embedText(value: string) {
   try {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getSessionUser } from "@/server-actions/session"
-import { cancelStripeSubscriptionForCustomer, getStripeCustomerByEmail } from "@/lib/stripe"
+import { cancelStripeSubscriptionForCustomer, getStripeCustomerByEmail } from "@/server-actions/stripe"
 
 export async function POST() {
   const user = await getSessionUser()

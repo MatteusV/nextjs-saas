@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { api } from "@/lib/api"
+import { api } from "@/utils/api"
 import { useToast } from "@/hooks/use-toast"
 
 type NotificationItem = {

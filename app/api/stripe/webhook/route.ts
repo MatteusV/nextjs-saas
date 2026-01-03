@@ -1,7 +1,7 @@
 import Stripe from "stripe"
 import { headers } from "next/headers"
 import { prisma } from "@/lib/prisma"
-import { getStripeClient } from "@/lib/stripe"
+import { getStripeClient } from "@/server-actions/stripe"
 
 export const runtime = "nodejs"
 

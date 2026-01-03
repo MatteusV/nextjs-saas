@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import {
   createInstagramMediaContainer,
   publishInstagramMedia,
-} from "@/lib/integrations/instagram"
+} from "@/server-actions/integrations/instagram"
 
 const CRON_SECRET = process.env.INSTAGRAM_CRON_SECRET
 

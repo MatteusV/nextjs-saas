@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAdminUser } from "@/server-actions/admin"
-import { getStripeClient } from "@/lib/stripe"
+import { getStripeClient } from "@/server-actions/stripe"
 
 function parsePercent(value: string) {
   const normalized = value.replace("%", "").replace(",", ".").trim()

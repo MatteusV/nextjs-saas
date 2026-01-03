@@ -10,8 +10,9 @@ import {
   fetchInstagramProfile,
   getInstagramConfig,
   pickInstagramBusinessPage,
-} from "@/lib/integrations/instagram"
-import { createIntegrationJob } from "@/lib/integrations/jobs"
+} from "@/server-actions/integrations/instagram"
+import { createIntegrationJob } from "@/server-actions/integrations/jobs"
+import { canUseIntegrations } from "@/utils/integrations"
 
 export async function GET(request: Request) {
   const user = await getSessionUser()
@@ -20,6 +21,18 @@ export async function GET(request: Request) {
 
   if (!user) {
     return NextResponse.redirect(new URL("/login", origin))
+  }
+
+  if (!canUseIntegrations(user.subscriptionPlan)) {
+    redirectTarget.pathname = "/app/plans"
+    await createIntegrationJob({
+      userId: user.id,
+      provider: "INSTAGRAM",
+      type: "CONNECT",
+      status: "FAILED",
+      error: "Acesso restrito ao plano Pro ou Business",
+    })
+    return NextResponse.redirect(redirectTarget)
   }
 
   const url = new URL(request.url)

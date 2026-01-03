@@ -1,5 +1,5 @@
-import { embedText } from "@/lib/rag/embeddings"
-import { insertEmbedding } from "@/lib/rag/persist"
+import { embedText } from "@/server-actions/rag/embeddings"
+import { insertEmbedding } from "@/server-actions/rag/persist"
 
 type StoreFeedbackEmbeddingParams = {
   feedbackId: string

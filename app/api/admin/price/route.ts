@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getStripeClient } from "@/lib/stripe"
+import { getStripeClient } from "@/server-actions/stripe"
 import { getAdminUser } from "@/server-actions/admin"
 
 function parseAmount(value: string) {

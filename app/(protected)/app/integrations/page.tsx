@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button"
 import { prisma } from "@/lib/prisma"
 import { getSessionUserWithStatus } from "@/server-actions/session"
 import { Instagram, Link2, ShieldCheck } from "lucide-react"
-import { getInstagramConfig } from "@/lib/integrations/instagram"
+import { getInstagramConfig } from "@/server-actions/integrations/instagram"
 import { InstagramPublishCard } from "@/components/instagram-publish-card"
 import { InstagramInsightsCard } from "@/components/instagram-insights-card"
 import { ClearIntegrationLogsButton } from "@/components/clear-integration-logs-button"
+import { redirect } from "next/navigation"
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -57,6 +58,10 @@ export default async function IntegrationsPage() {
         </Card>
       </div>
     )
+  }
+
+  if (user.subscriptionPlan === "FREE_TIER") {
+    redirect("/app/plans")
   }
 
   const instagramAccount = await prisma.integrationAccount.findFirst({

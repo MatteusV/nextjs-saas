@@ -1,8 +1,8 @@
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/server-actions/session"
-import { sendEmailChangeVerification } from "@/lib/email"
-import { resolvePlanFromStripeEmail } from "@/lib/stripe"
+import { sendEmailChangeVerification } from "@/server-actions/email"
+import { resolvePlanFromStripeEmail } from "@/server-actions/stripe"
 import { randomBytes } from "node:crypto"
 
 const patchSchema = z.object({

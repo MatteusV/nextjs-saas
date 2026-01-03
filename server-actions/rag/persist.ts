@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
-import { formatEmbeddingForSql } from "@/lib/rag/embeddings"
-import type { NormalizedPrompt, RagContext } from "@/lib/rag/types"
+import { formatEmbeddingForSql } from "@/server-actions/rag/embeddings"
+import type { NormalizedPrompt, RagContext } from "@/server-actions/rag/types"
 
 type CreateGenerationParams = {
   userId: string

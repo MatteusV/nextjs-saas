@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAdminUser } from "@/server-actions/admin"
-import { sendPushToUsers } from "@/lib/push"
+import { sendPushToUsers } from "@/server-actions/push"
 
 export async function POST(request: Request) {
   const admin = await getAdminUser()

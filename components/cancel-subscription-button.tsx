@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { api } from "@/lib/api"
+import { api } from "@/utils/api"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
 

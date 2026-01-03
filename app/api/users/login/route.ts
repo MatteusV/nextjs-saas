@@ -3,8 +3,8 @@ import { compare } from "bcryptjs"
 import { SignJWT } from "jose"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { resolvePlanFromStripeEmail } from "@/lib/stripe"
-import { rateLimit } from "@/lib/rate-limit"
+import { resolvePlanFromStripeEmail } from "@/server-actions/stripe"
+import { rateLimit } from "@/server-actions/rate-limit"
 
 const bodySchema = z.object({
   email: z.string().email(),

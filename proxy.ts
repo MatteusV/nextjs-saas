@@ -7,13 +7,6 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
   const token = request.cookies.get("session")?.value
 
-  if (path.startsWith("/app/integrations")) {
-    const appUrl = request.nextUrl.clone()
-    appUrl.pathname = "/app"
-    appUrl.search = ""
-    return NextResponse.redirect(appUrl)
-  }
-
   if (!token) {
     if (path === "/login" || path === "/register" || path === "/") {
       return NextResponse.next()

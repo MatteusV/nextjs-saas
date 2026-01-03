@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { api } from "@/lib/api"
+import { api } from "@/utils/api"
 import { useToast } from "@/hooks/use-toast"
 import { Check, Loader2, Sparkles } from "lucide-react"
 

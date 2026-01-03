@@ -1,8 +1,8 @@
 import { Prisma } from "@/generated/prisma/client"
 import { prisma } from "@/lib/prisma"
-import { formatEmbeddingForSql } from "@/lib/rag/embeddings"
-import { RAG_MAX_SIMILAR_GLOBAL, RAG_MAX_SIMILAR_USER } from "@/lib/rag/config"
-import type { RagContext, RagMatch } from "@/lib/rag/types"
+import { formatEmbeddingForSql } from "@/server-actions/rag/embeddings"
+import { RAG_MAX_SIMILAR_GLOBAL, RAG_MAX_SIMILAR_USER } from "@/server-actions/rag/config"
+import type { RagContext, RagMatch } from "@/server-actions/rag/types"
 
 type RetrieveContextParams = {
   userId: string

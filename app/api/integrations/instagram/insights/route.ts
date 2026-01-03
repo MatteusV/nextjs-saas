@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/server-actions/session"
-import { fetchInstagramInsights } from "@/lib/integrations/instagram"
-import { createIntegrationJob } from "@/lib/integrations/jobs"
+import { fetchInstagramInsights } from "@/server-actions/integrations/instagram"
+import { createIntegrationJob } from "@/server-actions/integrations/jobs"
+import { canUseIntegrations } from "@/utils/integrations"
 
 export async function GET(request: Request) {
   const user = await getSessionUser()
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (!canUseIntegrations(user.subscriptionPlan)) {
+    return NextResponse.json(
+      { error: "Integrações disponíveis apenas nos planos Pro e Business." },
+      { status: 403 }
+    )
   }
 
   const { searchParams } = new URL(request.url)

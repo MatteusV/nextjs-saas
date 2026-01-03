@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react"
-import { api } from "@/lib/api"
+import { api } from "@/utils/api"
 import {
   Dialog,
   DialogContent,

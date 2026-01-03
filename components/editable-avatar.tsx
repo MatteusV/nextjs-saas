@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
 import { Pencil, Loader2 } from "lucide-react"
-import { api } from "@/lib/api"
-import { cn } from "@/lib/utils"
+import { api } from "@/utils/api"
+import { cn } from "@/utils/cn"
 
 interface EditableAvatarProps {
   avatarUrl?: string | null

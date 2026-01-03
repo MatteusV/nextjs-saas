@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { UserUploadsGrid, type UploadItem } from "@/components/user-uploads-grid"
-import { api } from "@/lib/api"
+import { api } from "@/utils/api"
 import { useToast } from "@/hooks/use-toast"
 import { LayoutGrid, List } from "lucide-react"
 

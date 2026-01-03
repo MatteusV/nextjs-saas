@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { api } from "@/lib/api"
+import { api } from "@/utils/api"
 import { Loader2, MailCheck } from "lucide-react"
 
 type Status = "loading" | "success" | "error"

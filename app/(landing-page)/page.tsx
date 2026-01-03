@@ -16,7 +16,7 @@ import {
   Wand2,
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
-import { getStripePricesByIds } from "@/lib/stripe"
+import { getStripePricesByIds } from "@/server-actions/stripe"
 import { FeaturesStepperClient } from "@/components/features-stepper-client"
 import { ClientOnly } from "@/components/client-only"
 import { ThemeToggle } from "@/components/theme-toggle"

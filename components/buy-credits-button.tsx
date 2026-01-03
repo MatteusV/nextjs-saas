@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { api } from "@/lib/api"
+import { api } from "@/utils/api"
 
 type BuyCreditsButtonProps = React.ComponentProps<typeof Button> & {
   label?: string

@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import { sendVerificationEmail } from "@/lib/email"
-import { resolvePlanFromStripeEmail } from "@/lib/stripe"
+import { sendVerificationEmail } from "@/server-actions/email"
+import { resolvePlanFromStripeEmail } from "@/server-actions/stripe"
 import { hash } from "bcryptjs"
 import { randomBytes } from "node:crypto"
 

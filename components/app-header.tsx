@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { api } from "@/lib/api"
+import { api } from "@/utils/api"
 import { useToast } from "@/hooks/use-toast"
 import { getCurrentUser } from "@/server-actions/session"
 import { NotificationBell } from "@/components/notification-bell"
@@ -40,6 +40,7 @@ export function AppHeader() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const [isAdmin, setIsAdmin] = useState(false)
+  const [canUseIntegrations, setCanUseIntegrations] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -50,9 +51,13 @@ export function AppHeader() {
         if (!response.ok) return
         if (active) {
           setIsAdmin(data.user?.role === "ADMIN")
+          setCanUseIntegrations(data.user?.subscriptionPlan !== "FREE_TIER")
         }
       } catch {
-        if (active) setIsAdmin(false)
+        if (active) {
+          setIsAdmin(false)
+          setCanUseIntegrations(false)
+        }
       }
     }
     loadRole()
@@ -94,6 +99,9 @@ export function AppHeader() {
     { href: "/app", label: "Criar" },
     { href: "/app?tab=uploads", label: "Minhas imagens" },
     { href: "/app/plans", label: "Planos" },
+    ...(canUseIntegrations
+      ? [{ href: "/app/integrations", label: "Integrações" }]
+      : []),
   ]
 
   const isActive = (href: string) => {

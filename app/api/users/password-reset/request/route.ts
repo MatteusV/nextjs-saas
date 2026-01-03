@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/server-actions/session"
-import { sendPasswordResetEmail } from "@/lib/email"
-import { rateLimit } from "@/lib/rate-limit"
+import { sendPasswordResetEmail } from "@/server-actions/email"
+import { rateLimit } from "@/server-actions/rate-limit"
 
 const PASSWORD_RESET_COOLDOWN_MS = 5 * 60 * 1000
 

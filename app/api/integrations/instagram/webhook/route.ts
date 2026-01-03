@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { createIntegrationJob } from "@/lib/integrations/jobs"
+import { createIntegrationJob } from "@/server-actions/integrations/jobs"
 
 const VERIFY_TOKEN = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN ?? ""
 

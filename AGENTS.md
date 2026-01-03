@@ -13,7 +13,7 @@
 - `public/`: Static assets (icons, placeholders).
 - `styles/` and `app/globals.css`: Global styling (Tailwind).
 
-Use the path alias `@/*` (configured in `tsconfig.json`) for imports, e.g. `import { cn } from "@/lib/utils"`.
+Use the path alias `@/*` (configured in `tsconfig.json`) for imports, e.g. `import { cn } from "@/utils/cn"`.
 
 ## Build, Test, and Development Commands
 This repo uses Next.js + TypeScript and is typically run with pnpm (see `pnpm-lock.yaml`).

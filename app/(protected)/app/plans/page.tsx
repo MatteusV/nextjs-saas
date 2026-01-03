@@ -1,7 +1,7 @@
 import { PlanSelector } from "@/components/plan-selector"
 import { CreditPackCard } from "@/components/credit-pack-card"
 import { prisma } from "@/lib/prisma"
-import { getStripePricesByIds } from "@/lib/stripe"
+import { getStripePricesByIds } from "@/server-actions/stripe"
 import { getSessionUserWithStatus } from "@/server-actions/session"
 import {
   Card,

@@ -17,7 +17,7 @@ import { AdminNotificationHistoryDialog } from "@/components/admin-notification-
 import { AdminPromotionHistoryDialog } from "@/components/admin-promotion-history-dialog"
 import { AdminAlertSettingsDialog } from "@/components/admin-alert-settings-dialog"
 import { prisma } from "@/lib/prisma"
-import { getStripePricesByIds } from "@/lib/stripe"
+import { getStripePricesByIds } from "@/server-actions/stripe"
 import { getAdminUser } from "@/server-actions/admin"
 import { redirect } from "next/navigation"
 import {
@@ -30,8 +30,8 @@ import {
   Tag,
   Users,
 } from "lucide-react"
-import { getOrCreateAlertSettings } from "@/lib/admin-alerts"
-import { sendPushToUsers } from "@/lib/push"
+import { getOrCreateAlertSettings } from "@/server-actions/admin-alerts"
+import { sendPushToUsers } from "@/server-actions/push"
 
 function formatCurrency(value: number, currency: string) {
   return new Intl.NumberFormat("pt-BR", {

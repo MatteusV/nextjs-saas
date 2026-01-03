@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { getSessionUser } from "@/server-actions/session"
-import { storeFeedbackEmbedding } from "@/lib/rag/feedback"
+import { storeFeedbackEmbedding } from "@/server-actions/rag/feedback"
 
 const feedbackSchema = z.object({
   generationId: z.string().uuid(),

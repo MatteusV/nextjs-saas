@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { getAdminUser } from "@/server-actions/admin"
 import { prisma } from "@/lib/prisma"
-import { getOrCreateAlertSettings } from "@/lib/admin-alerts"
+import { getOrCreateAlertSettings } from "@/server-actions/admin-alerts"
 
 const alertSettingsSchema = z.object({
   highUsage24hLimit: z.number().int().min(10).max(100000),

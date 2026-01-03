@@ -17,7 +17,7 @@ import { CancelSubscriptionButton } from "@/components/cancel-subscription-butto
 import { CreditPackCard } from "@/components/credit-pack-card"
 import { prisma } from "@/lib/prisma"
 import { getSessionUserWithStatus } from "@/server-actions/session"
-import { getStripeBillingSummary, getStripePricesByIds } from "@/lib/stripe"
+import { getStripeBillingSummary, getStripePricesByIds } from "@/server-actions/stripe"
 import Link from "next/link"
 import { Crown, Receipt, ShieldCheck, Sparkles, User } from "lucide-react"
 

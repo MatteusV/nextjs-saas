@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getSessionUser } from "@/server-actions/session"
-import { getStripeClient, getStripeCustomerByEmail } from "@/lib/stripe"
+import { getStripeClient, getStripeCustomerByEmail } from "@/server-actions/stripe"
 
 export async function POST(request: Request) {
   const user = await getSessionUser()

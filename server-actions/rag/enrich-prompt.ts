@@ -1,6 +1,6 @@
 import { generateText, gateway } from "ai"
-import { RAG_LANGUAGE_MODEL } from "@/lib/rag/config"
-import type { NormalizedPrompt, RagContext } from "@/lib/rag/types"
+import { RAG_LANGUAGE_MODEL } from "@/server-actions/rag/config"
+import type { NormalizedPrompt, RagContext } from "@/server-actions/rag/types"
 
 type EnrichPromptParams = {
   normalized: NormalizedPrompt
